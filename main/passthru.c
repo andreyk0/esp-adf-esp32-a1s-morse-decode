@@ -20,9 +20,14 @@
 
 #include "configure_es8388.h"
 
+#include "dsp.h"
+
 static const char *TAG = "PASSTHRU";
 
 void app_main(void) {
+
+  dsp_eg();
+
   audio_pipeline_handle_t pipeline;
   audio_element_handle_t i2s_stream_writer, i2s_stream_reader,
       audio_modifier_el;
@@ -32,7 +37,7 @@ void app_main(void) {
 
   ESP_LOGI(TAG, "[ 1 ] Start codec chip");
   configure_es8388();
-  //ESP_ERROR_CHECK(es8388_pa_power(true)); // enable speaker amp power
+  // ESP_ERROR_CHECK(es8388_pa_power(true)); // enable speaker amp power
 
   ESP_LOGI(TAG, "[ 2 ] Create audio pipeline for playback");
   audio_pipeline_cfg_t pipeline_cfg = DEFAULT_AUDIO_PIPELINE_CONFIG();
