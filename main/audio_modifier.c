@@ -23,10 +23,9 @@ static const char *TAG = "AUDIO_MODIFIER";
 typedef struct audio_modifier {
   uint32_t cnt;
   float coeffs_bpf[AUDIO_MODIFIER_FILTER_LEN];
-  float coeffs_lpf[AUDIO_MODIFIER_FILTER_LEN];
-  float wf1[AUDIO_MODIFIER_FILTER_LEN];
-  float wf2[AUDIO_MODIFIER_FILTER_LEN];
-  float wf3[AUDIO_MODIFIER_FILTER_LEN];
+  float coeffs_lpf_envelope[AUDIO_MODIFIER_FILTER_LEN];
+  float wfb[AUDIO_MODIFIER_FILTER_LEN];
+  float wfe[AUDIO_MODIFIER_FILTER_LEN];
 } audio_modifier_t;
 
 /**
@@ -85,27 +84,25 @@ static int _modifier_process(audio_element_handle_t self, char *in_buffer,
   }
 
   for (int i = 0; i < num_samples_filter; i++) {
-    input[i] = 3.0 * (float)samples[i * 2]; // x4 to compensate for amplitude drop in the filter chain
+    input[i] = (float)samples[i * 2];
   }
 
-  // 2nd order BPF
+  // BPF
   ESP_ERROR_CHECK(dsps_biquad_f32(input, output, num_samples_filter,
-                                  mod->coeffs_bpf, mod->wf1));
+                                  mod->coeffs_bpf, mod->wfb));
 
-  memcpy(input, output, num_samples_filter * sizeof(float));
-
-  // 4th order BPF
-  ESP_ERROR_CHECK(dsps_biquad_f32(input, output, num_samples_filter,
-                                  mod->coeffs_bpf, mod->wf2));
-
-  memcpy(input, output, num_samples_filter * sizeof(float));
-
-  // 6th order LPF
-  ESP_ERROR_CHECK(dsps_biquad_f32(input, output, num_samples_filter,
-                                  mod->coeffs_lpf, mod->wf3));
-  // A^2 to recover envelope
+  // Envelope
   for (int i = 0; i < num_samples_filter; i++) {
-    // samples[i * 2] = (int16_t)(-32767.0 + output[i] * output[i] / 16384.0);
+    input[i] = -20000.0 + fabs(output[i]) / 8;
+  }
+
+  // LPF over envelope
+  ESP_ERROR_CHECK(dsps_biquad_f32(
+      input, output, num_samples_filter, mod->coeffs_lpf_envelope,
+      mod->wfe)); // memcpy(output, input, num_samples_filter * sizeof(float));
+
+  // Convert back to stereo output
+  for (int i = 0; i < num_samples_filter; i++) {
     samples[i * 2] = (int16_t)output[i];
   }
 
@@ -189,10 +186,11 @@ audio_element_handle_t audio_modifier_init(audio_modifier_cfg_t *config) {
     return NULL;
   });
 
-  // Init BPF
+  // Init filters
   // 44100 1K
-  ESP_ERROR_CHECK(dsps_biquad_gen_bpf_f32(mod->coeffs_bpf, 0.023, 0.707f));
-  ESP_ERROR_CHECK(dsps_biquad_gen_lpf_f32(mod->coeffs_lpf, 0.023, 0.707f));
+  ESP_ERROR_CHECK(dsps_biquad_gen_bpf_f32(mod->coeffs_bpf, 0.023, 10.0f));
+  ESP_ERROR_CHECK(
+      dsps_biquad_gen_lpf_f32(mod->coeffs_lpf_envelope, 0.003, 0.707f));
 
   // Basic audio element configuration
   audio_element_cfg_t cfg = DEFAULT_AUDIO_ELEMENT_CONFIG();

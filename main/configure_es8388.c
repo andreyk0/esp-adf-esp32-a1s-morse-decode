@@ -141,7 +141,7 @@ static int i2c_init() {
   i2c_config_t es_i2c_cfg = {.mode = I2C_MODE_MASTER,
                              .sda_pullup_en = GPIO_PULLUP_ENABLE,
                              .scl_pullup_en = GPIO_PULLUP_ENABLE,
-                             .master.clk_speed = 100000};
+                             .master.clk_speed = 40000};
   ESP_ERROR_CHECK(get_i2c_pins(I2C_NUM_0, &es_i2c_cfg));
   i2c_handle = i2c_bus_create(I2C_NUM_0, &es_i2c_cfg);
   return ESP_OK;
