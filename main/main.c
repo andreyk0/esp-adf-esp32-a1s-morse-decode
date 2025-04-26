@@ -20,14 +20,9 @@
 
 #include "configure_es8388.h"
 
-#include "dsp.h"
-
 static const char *TAG = "PASSTHRU";
 
 void app_main(void) {
-
-  dsp_eg();
-
   audio_pipeline_handle_t pipeline;
   audio_element_handle_t i2s_stream_writer, i2s_stream_reader,
       audio_modifier_el;
