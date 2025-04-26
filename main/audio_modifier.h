@@ -26,6 +26,8 @@ typedef struct {
 #define AUDIO_MODIFIER_TASK_CORE (0)
 #define AUDIO_MODIFIER_TASK_PRIO (5)
 #define AUDIO_MODIFIER_RINGBUFFER_SIZE (8 * 1024) // Output buffer size
+#define AUDIO_MODIFIER_N_SAMPLES (1024)
+#define AUDIO_MODIFIER_FILTER_LEN (5)
 
 /**
  * @brief Default configuration macro for the audio modifier element.

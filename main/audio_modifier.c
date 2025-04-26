@@ -1,8 +1,19 @@
 #include "audio_modifier.h" // Include our header
+
 #include "audio_element.h"
 #include "audio_mem.h" // For memory allocation functions like audio_calloc
+#include "esp_err.h"
 #include "esp_log.h"
+#include <dsp_common.h>
+#include <dsps_biquad.h>
+#include <dsps_biquad_gen.h>
+#include <dsps_d_gen.h>
+#include <dsps_fft2r.h>
+#include <dsps_view.h>
+#include <math.h>
 #include <stdint.h>
+#include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
 
 static const char *TAG = "AUDIO_MODIFIER";
@@ -11,7 +22,9 @@ static const char *TAG = "AUDIO_MODIFIER";
 // this simple example)
 typedef struct audio_modifier {
   uint32_t cnt;
-  int16_t s;
+  float coeffs_lpf[AUDIO_MODIFIER_FILTER_LEN];
+  float w_hpf1[AUDIO_MODIFIER_FILTER_LEN];
+  float w_hpf2[AUDIO_MODIFIER_FILTER_LEN];
 } audio_modifier_t;
 
 /**
@@ -22,6 +35,8 @@ typedef struct audio_modifier {
  */
 static int _modifier_process(audio_element_handle_t self, char *in_buffer,
                              int in_len) {
+  __attribute__((aligned(16))) static float input[AUDIO_MODIFIER_N_SAMPLES];
+  __attribute__((aligned(16))) static float output[AUDIO_MODIFIER_N_SAMPLES];
 
   audio_modifier_t *mod = (audio_modifier_t *)audio_element_getdata(self);
 
@@ -57,16 +72,30 @@ static int _modifier_process(audio_element_handle_t self, char *in_buffer,
   // Assuming 16-bit signed integer samples
   int16_t *samples = (int16_t *)in_buffer;
   int num_samples = r_size / sizeof(int16_t);
+  int num_samples_filter = num_samples / 2; // 1 channel only
 
-  if (mod->cnt % 1000 == 0) {
-    ESP_LOGW(TAG, "cnt: %ul, s: %d, num_samples: %d", (unsigned int)mod->cnt,
-             (int)mod->s, num_samples);
+  /* ESP_LOGW(TAG, "cnt: %ul, num_samples: %d, in_len: %d", (unsigned
+   * int)mod->cnt, */
+  /*          num_samples, in_len); */
+
+  if (num_samples_filter > AUDIO_MODIFIER_N_SAMPLES) {
+    return ESP_FAIL;
   }
 
-  for (int i = 0; i < num_samples; i++) {
-    if (i % 2 == 0) {
-      samples[i] = -samples[i];
-    }
+  for (int i = 0; i < num_samples_filter; i++) {
+    input[i] = (float)samples[i * 2];
+  }
+
+  ESP_ERROR_CHECK(dsps_biquad_f32(input, output, num_samples_filter,
+                                  mod->coeffs_lpf, mod->w_hpf1));
+
+  memcpy(input, output, AUDIO_MODIFIER_N_SAMPLES * sizeof(float));
+
+  ESP_ERROR_CHECK(dsps_biquad_f32(input, output, num_samples_filter,
+                                  mod->coeffs_lpf, mod->w_hpf2));
+
+  for (int i = 0; i < num_samples_filter; i++) {
+    samples[i * 2] = (int16_t)output[i];
   }
 
   // Write the modified data to the output ringbuffer
@@ -148,6 +177,10 @@ audio_element_handle_t audio_modifier_init(audio_modifier_cfg_t *config) {
     ESP_LOGE(TAG, "Failed to allocate memory for audio_modifier_t");
     return NULL;
   });
+
+  // Init BPF
+  // 44100 1K
+  ESP_ERROR_CHECK(dsps_biquad_gen_bpf_f32(mod->coeffs_lpf, 0.023, 0.707f));
 
   // Basic audio element configuration
   audio_element_cfg_t cfg = DEFAULT_AUDIO_ELEMENT_CONFIG();
