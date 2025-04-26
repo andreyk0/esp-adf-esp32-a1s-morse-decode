@@ -22,9 +22,11 @@ static const char *TAG = "AUDIO_MODIFIER";
 // this simple example)
 typedef struct audio_modifier {
   uint32_t cnt;
+  float coeffs_bpf[AUDIO_MODIFIER_FILTER_LEN];
   float coeffs_lpf[AUDIO_MODIFIER_FILTER_LEN];
-  float w_hpf1[AUDIO_MODIFIER_FILTER_LEN];
-  float w_hpf2[AUDIO_MODIFIER_FILTER_LEN];
+  float wf1[AUDIO_MODIFIER_FILTER_LEN];
+  float wf2[AUDIO_MODIFIER_FILTER_LEN];
+  float wf3[AUDIO_MODIFIER_FILTER_LEN];
 } audio_modifier_t;
 
 /**
@@ -83,18 +85,27 @@ static int _modifier_process(audio_element_handle_t self, char *in_buffer,
   }
 
   for (int i = 0; i < num_samples_filter; i++) {
-    input[i] = (float)samples[i * 2];
+    input[i] = 3.0 * (float)samples[i * 2]; // x4 to compensate for amplitude drop in the filter chain
   }
 
+  // 2nd order BPF
   ESP_ERROR_CHECK(dsps_biquad_f32(input, output, num_samples_filter,
-                                  mod->coeffs_lpf, mod->w_hpf1));
+                                  mod->coeffs_bpf, mod->wf1));
 
-  memcpy(input, output, AUDIO_MODIFIER_N_SAMPLES * sizeof(float));
+  memcpy(input, output, num_samples_filter * sizeof(float));
 
+  // 4th order BPF
   ESP_ERROR_CHECK(dsps_biquad_f32(input, output, num_samples_filter,
-                                  mod->coeffs_lpf, mod->w_hpf2));
+                                  mod->coeffs_bpf, mod->wf2));
 
+  memcpy(input, output, num_samples_filter * sizeof(float));
+
+  // 6th order LPF
+  ESP_ERROR_CHECK(dsps_biquad_f32(input, output, num_samples_filter,
+                                  mod->coeffs_lpf, mod->wf3));
+  // A^2 to recover envelope
   for (int i = 0; i < num_samples_filter; i++) {
+    // samples[i * 2] = (int16_t)(-32767.0 + output[i] * output[i] / 16384.0);
     samples[i * 2] = (int16_t)output[i];
   }
 
@@ -180,7 +191,8 @@ audio_element_handle_t audio_modifier_init(audio_modifier_cfg_t *config) {
 
   // Init BPF
   // 44100 1K
-  ESP_ERROR_CHECK(dsps_biquad_gen_bpf_f32(mod->coeffs_lpf, 0.023, 0.707f));
+  ESP_ERROR_CHECK(dsps_biquad_gen_bpf_f32(mod->coeffs_bpf, 0.023, 0.707f));
+  ESP_ERROR_CHECK(dsps_biquad_gen_lpf_f32(mod->coeffs_lpf, 0.023, 0.707f));
 
   // Basic audio element configuration
   audio_element_cfg_t cfg = DEFAULT_AUDIO_ELEMENT_CONFIG();
