@@ -16,16 +16,20 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include "ook_adaptive_threshold.h"
+#include "ook_edge_detector.h"
+
 static const char *TAG = "AUDIO_MODIFIER";
 
-// Structure to hold any instance-specific data for the element (none needed for
-// this simple example)
 typedef struct audio_modifier {
   uint32_t cnt;
   float coeffs_bpf[AUDIO_MODIFIER_FILTER_LEN];
   float coeffs_lpf_envelope[AUDIO_MODIFIER_FILTER_LEN];
   float wfb[AUDIO_MODIFIER_FILTER_LEN];
   float wfe[AUDIO_MODIFIER_FILTER_LEN];
+
+  ook_adaptive_threshold_t ook_thres;
+  ook_edge_detector_t ook_edge;
 } audio_modifier_t;
 
 /**
@@ -34,8 +38,7 @@ typedef struct audio_modifier {
  * and writes the modified data to the output ringbuffer.
  * Handles input/output errors, timeouts, and stream termination (AEL_IO_DONE).
  */
-static int _modifier_process(audio_element_handle_t self, char *in_buffer,
-                             int in_len) {
+static int _modifier_process(audio_element_handle_t self, char *in_buffer, int in_len) {
   __attribute__((aligned(16))) static float input[AUDIO_MODIFIER_N_SAMPLES];
   __attribute__((aligned(16))) static float output[AUDIO_MODIFIER_N_SAMPLES];
 
@@ -47,10 +50,9 @@ static int _modifier_process(audio_element_handle_t self, char *in_buffer,
   if (r_size <= 0) {
     if (r_size == AEL_IO_TIMEOUT) {
       ESP_LOGD(TAG, "Input timeout, continue processing");
-      return ESP_OK; // Timeout is okay, the element task should continue
-                     // running
-    } else if (r_size == AEL_IO_DONE ||
-               r_size == AEL_IO_OK) { // AEL_IO_OK (0) can indicate DONE
+      return ESP_OK;                                           // Timeout is okay, the element task should continue
+                                                               // running
+    } else if (r_size == AEL_IO_DONE || r_size == AEL_IO_OK) { // AEL_IO_OK (0) can indicate DONE
       ESP_LOGI(TAG, "Input stream ended (AEL_IO_DONE received: %d)", r_size);
       // Signal DONE downstream. Important to pass NULL buffer and 0 length.
       audio_element_output(self, NULL, 0);
@@ -88,8 +90,7 @@ static int _modifier_process(audio_element_handle_t self, char *in_buffer,
   }
 
   // BPF
-  ESP_ERROR_CHECK(dsps_biquad_f32(input, output, num_samples_filter,
-                                  mod->coeffs_bpf, mod->wfb));
+  ESP_ERROR_CHECK(dsps_biquad_f32(input, output, num_samples_filter, mod->coeffs_bpf, mod->wfb));
 
   // Envelope
   for (int i = 0; i < num_samples_filter; i++) {
@@ -97,13 +98,21 @@ static int _modifier_process(audio_element_handle_t self, char *in_buffer,
   }
 
   // LPF over envelope
-  ESP_ERROR_CHECK(dsps_biquad_f32(
-      input, output, num_samples_filter, mod->coeffs_lpf_envelope,
-      mod->wfe)); // memcpy(output, input, num_samples_filter * sizeof(float));
+  ESP_ERROR_CHECK(dsps_biquad_f32(input, output, num_samples_filter, mod->coeffs_lpf_envelope,
+                                  mod->wfe)); // memcpy(output, input, num_samples_filter * sizeof(float));
 
-  // Convert back to stereo output
+  // Convert back to stereo output and run OOK decoder
   for (int i = 0; i < num_samples_filter; i++) {
-    samples[i * 2] = (int16_t)output[i];
+    int16_t s = (int16_t)output[i];
+    samples[i * 2] = s;
+
+    int32_t e = ook_edge_detector_update(&mod->ook_edge, s);
+
+    if (e != 0) {
+      size_t j = i * 2 + 1;
+      samples[j] += mod->ook_thres.current_max - mod->ook_thres.current_min;
+      ESP_LOGI(TAG, "E: %d", (int)e);
+    }
   }
 
   // Write the modified data to the output ringbuffer
@@ -114,8 +123,7 @@ static int _modifier_process(audio_element_handle_t self, char *in_buffer,
     // Successfully wrote all data
     return w_size;
   } else if (w_size == AEL_IO_TIMEOUT) {
-    ESP_LOGW(TAG, "Output ringbuffer timeout (wrote %d/%d bytes)", w_size,
-             r_size);
+    ESP_LOGW(TAG, "Output ringbuffer timeout (wrote %d/%d bytes)", w_size, r_size);
     // Output buffer likely full. Element should wait and retry, which
     // returning ESP_OK effectively does (the element's task loop will call
     // process again). The output_wait_time in cfg helps prevent this from
@@ -124,8 +132,7 @@ static int _modifier_process(audio_element_handle_t self, char *in_buffer,
   } else {
     // Handle actual output errors (w_size < 0 but not AEL_IO_TIMEOUT, or w_size
     // < r_size)
-    ESP_LOGE(TAG, "Error writing to output ringbuffer: %d (expected %d)",
-             w_size, r_size);
+    ESP_LOGE(TAG, "Error writing to output ringbuffer: %d (expected %d)", w_size, r_size);
     // Report error state to the pipeline listener
     audio_element_report_status(self, AEL_STATUS_ERROR_OUTPUT);
     // Return ESP_FAIL to stop the element task immediately
@@ -186,11 +193,13 @@ audio_element_handle_t audio_modifier_init(audio_modifier_cfg_t *config) {
     return NULL;
   });
 
+  ook_adaptive_threshold_init(&mod->ook_thres, 3);
+  ook_edge_detector_init(&mod->ook_edge, &mod->ook_thres, 0);
+
   // Init filters
-  // 44100 1K
-  ESP_ERROR_CHECK(dsps_biquad_gen_bpf_f32(mod->coeffs_bpf, 0.023, 10.0f));
-  ESP_ERROR_CHECK(
-      dsps_biquad_gen_lpf_f32(mod->coeffs_lpf_envelope, 0.003, 0.707f));
+  // 44100 750Hz
+  ESP_ERROR_CHECK(dsps_biquad_gen_bpf_f32(mod->coeffs_bpf, 0.017, 10.0f));
+  ESP_ERROR_CHECK(dsps_biquad_gen_lpf_f32(mod->coeffs_lpf_envelope, 0.003, 0.707f));
 
   // Basic audio element configuration
   audio_element_cfg_t cfg = DEFAULT_AUDIO_ELEMENT_CONFIG();
