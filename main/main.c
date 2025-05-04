@@ -19,13 +19,15 @@
 #include <string.h>
 
 #include "configure_es8388.h"
+#include "morse.h"
 
-static const char *TAG = "PASSTHRU";
+static const char *TAG = "MAIN";
 
 void app_main(void) {
+  ESP_ERROR_CHECK(morse_init());
+
   audio_pipeline_handle_t pipeline;
-  audio_element_handle_t i2s_stream_writer, i2s_stream_reader,
-      audio_dsp_el;
+  audio_element_handle_t i2s_stream_writer, i2s_stream_reader, audio_dsp_el;
 
   esp_log_level_set("*", ESP_LOG_INFO);
   esp_log_level_set(TAG, ESP_LOG_DEBUG);
@@ -87,11 +89,9 @@ void app_main(void) {
 
     /* Stop when the last pipeline element (i2s_stream_writer in this case)
      * receives stop event */
-    if (msg.source_type == AUDIO_ELEMENT_TYPE_ELEMENT &&
-        msg.source == (void *)i2s_stream_writer &&
+    if (msg.source_type == AUDIO_ELEMENT_TYPE_ELEMENT && msg.source == (void *)i2s_stream_writer &&
         msg.cmd == AEL_MSG_CMD_REPORT_STATUS &&
-        (((int)msg.data == AEL_STATUS_STATE_STOPPED) ||
-         ((int)msg.data == AEL_STATUS_STATE_FINISHED))) {
+        (((int)msg.data == AEL_STATUS_STATE_STOPPED) || ((int)msg.data == AEL_STATUS_STATE_FINISHED))) {
       ESP_LOGW(TAG, "[ * ] Stop event received");
       break;
     }

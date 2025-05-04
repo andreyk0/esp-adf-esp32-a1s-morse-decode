@@ -9,7 +9,7 @@
 #include <limits.h>    // For INT32_MAX, INT32_MIN, UINT32_MAX
 
 // Define a logging tag for this module
-static const char *TAG = "ook_edge";
+static const char *TAG = "OOKE";
 
 // --- Function Implementations ---
 

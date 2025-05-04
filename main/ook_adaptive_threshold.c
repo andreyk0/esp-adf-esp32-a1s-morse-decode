@@ -10,7 +10,7 @@
 #include <stdlib.h> // For abs, potentially needed if decay logic changes, though not strictly now
 
 // Define a logging tag for this module
-static const char *TAG = "ook_thresh";
+static const char *TAG = "OOKT";
 
 // Helper macro for integer min/max (stdlib.h doesn't have standard int min/max)
 #define INT16_MINIMUM(a, b) (((a) < (b)) ? (a) : (b))

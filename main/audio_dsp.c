@@ -16,10 +16,11 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include "morse.h"
 #include "ook_adaptive_threshold.h"
 #include "ook_edge_detector.h"
 
-static const char *TAG = "AUDIO_MODIFIER";
+static const char *TAG = "AUD";
 
 typedef struct audio_dsp {
   uint32_t cnt;
@@ -86,7 +87,7 @@ static int _modifier_process(audio_element_handle_t self, char *in_buffer, int i
   }
 
   for (int i = 0; i < num_samples_filter; i++) {
-    input[i] = (float)samples[i * 2];
+    input[i] = (float)samples[i * 2] / 4;
   }
 
   // BPF
@@ -94,7 +95,7 @@ static int _modifier_process(audio_element_handle_t self, char *in_buffer, int i
 
   // Envelope
   for (int i = 0; i < num_samples_filter; i++) {
-    input[i] = -20000.0 + fabs(output[i]) / 8;
+    input[i] = -20000.0 + fabs(output[i]);
   }
 
   // LPF over envelope
@@ -109,9 +110,10 @@ static int _modifier_process(audio_element_handle_t self, char *in_buffer, int i
     int32_t e = ook_edge_detector_update(&mod->ook_edge, s);
 
     if (e != 0) {
-      size_t j = i * 2 + 1;
-      samples[j] += mod->ook_thres.current_max - mod->ook_thres.current_min;
-      ESP_LOGI(TAG, "E: %d", (int)e);
+      uint32_t range = (uint32_t)mod->ook_thres.current_max - mod->ook_thres.current_min;
+      ESP_ERROR_CHECK(morse_sample(e, range));
+      // size_t j = i * 2 + 1;
+      // samples[j] += range;
     }
   }
 
@@ -198,7 +200,7 @@ audio_element_handle_t audio_dsp_init(audio_dsp_cfg_t *config) {
 
   // Init filters
   // 44100 750Hz
-  ESP_ERROR_CHECK(dsps_biquad_gen_bpf_f32(mod->coeffs_bpf, 0.017, 10.0f));
+  ESP_ERROR_CHECK(dsps_biquad_gen_bpf_f32(mod->coeffs_bpf, 0.017, 10.5f));
   ESP_ERROR_CHECK(dsps_biquad_gen_lpf_f32(mod->coeffs_lpf_envelope, 0.003, 0.707f));
 
   // Basic audio element configuration

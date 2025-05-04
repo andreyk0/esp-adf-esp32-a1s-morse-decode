@@ -7,7 +7,7 @@
 #include <es8388.h>
 #include <string.h>
 
-static const char *TAG = "ES8388_CONFIG";
+static const char *TAG = "ES8388";
 static i2c_bus_handle_t i2c_handle;
 
 static int i2c_init();
@@ -57,10 +57,10 @@ void configure_es8388(void) {
               // 0x00)); // Select LINPUT1 for Left ADC, RINPUT1 for Right ADC
 
   ESP_ERROR_CHECK(es8388_write(ES8388_ADCCONTROL10,
-                               0xF0)); // ALC gain
+                               0xF8)); // ALC gain
 
   ESP_ERROR_CHECK(es8388_write(ES8388_ADCCONTROL11,
-                               0xFF)); // ALC target
+                               0xF9)); // ALC target
 
   // Set ADC I2S format and word length
   ESP_ERROR_CHECK(
