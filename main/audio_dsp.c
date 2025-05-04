@@ -195,7 +195,7 @@ audio_element_handle_t audio_dsp_init(audio_dsp_cfg_t *config) {
     return NULL;
   });
 
-  ook_adaptive_threshold_init(&mod->ook_thres, 3);
+  ook_adaptive_threshold_init(&mod->ook_thres, 3, 10000);
   ook_edge_detector_init(&mod->ook_edge, &mod->ook_thres, 0);
 
   // Init filters
