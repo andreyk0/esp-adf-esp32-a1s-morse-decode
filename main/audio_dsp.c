@@ -200,8 +200,8 @@ audio_element_handle_t audio_dsp_init(audio_dsp_cfg_t *config) {
 
   // Init filters
   // 44100 750Hz
-  ESP_ERROR_CHECK(dsps_biquad_gen_bpf_f32(mod->coeffs_bpf, 0.017, 10.5f));
-  ESP_ERROR_CHECK(dsps_biquad_gen_lpf_f32(mod->coeffs_lpf_envelope, 0.003, 0.707f));
+  ESP_ERROR_CHECK(dsps_biquad_gen_bpf_f32(mod->coeffs_bpf, 0.017, 12.0f));
+  ESP_ERROR_CHECK(dsps_biquad_gen_lpf_f32(mod->coeffs_lpf_envelope, 0.001, 0.707f));
 
   // Basic audio element configuration
   audio_element_cfg_t cfg = DEFAULT_AUDIO_ELEMENT_CONFIG();

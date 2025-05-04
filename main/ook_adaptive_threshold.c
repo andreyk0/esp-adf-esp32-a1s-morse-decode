@@ -22,7 +22,7 @@ static const char *TAG = "OOKT";
 esp_err_t ook_adaptive_threshold_init(ook_adaptive_threshold_t *state, uint16_t decay_step, uint16_t min_range) {
   ESP_RETURN_ON_FALSE(state != NULL, ESP_ERR_INVALID_ARG, TAG, "State pointer cannot be NULL");
   ESP_RETURN_ON_FALSE(decay_step > 0, ESP_ERR_INVALID_ARG, TAG, "Decay step must be positive");
-  ESP_RETURN_ON_FALSE(min_range > decay_step, ESP_ERR_INVALID_ARG, TAG, "Invalid min range");
+  ESP_RETURN_ON_FALSE(min_range > 2 * decay_step, ESP_ERR_INVALID_ARG, TAG, "Invalid min range");
 
   state->current_min = -1;
   state->current_max = 1;
@@ -43,7 +43,9 @@ void ook_adaptive_threshold_update(ook_adaptive_threshold_t *state, int16_t samp
   // Check if max > min to avoid issues if they become equal/inverted
   // Only decay if the range is larger than twice the step size to prevent
   // crossing
-  if (state->current_max > state->current_min && (state->current_max - state->current_min) >= state->min_range) {
+  if (state->current_max > state->current_min &&
+      ((uint16_t)state->current_max - state->current_min) >= state->min_range) {
+
     // Move max or min only, to avoid skewing midpoint too much when decoding a run of samples in a particular state
     if (sample > ook_adaptive_threshold_get(state)) {
       // Decrease max towards midpoint, but don't overshoot min
@@ -53,15 +55,9 @@ void ook_adaptive_threshold_update(ook_adaptive_threshold_t *state, int16_t samp
       state->current_min += state->decay_step;
     }
 
-    // Sanity check to prevent crossing due to large step or precision issues
-    // (though less likely with int) This check might be redundant given the
-    // condition above, but adds safety.
+    // shouldn't happen
     if (state->current_min > state->current_max) {
-      // If they crossed, set them to the midpoint (average)
-      // Use the safer midpoint calculation to avoid overflow: min + (max - min)
-      // / 2 Note: We need the original values before decay for this average.
-      // Simpler recovery: just set them equal if they crossed.
-      state->current_min = state->current_max = state->current_min - state->decay_step; // Revert min step
+      state->current_max = state->current_min + state->min_range + state->decay_step;
       ESP_LOGV(TAG, "Min/Max crossed during decay, reset to %d", state->current_min);
     }
   }
