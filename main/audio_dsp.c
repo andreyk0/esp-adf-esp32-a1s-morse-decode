@@ -1,4 +1,4 @@
-#include "audio_modifier.h" // Include our header
+#include "audio_dsp.h" // Include our header
 
 #include "audio_element.h"
 #include "audio_mem.h" // For memory allocation functions like audio_calloc
@@ -21,7 +21,7 @@
 
 static const char *TAG = "AUDIO_MODIFIER";
 
-typedef struct audio_modifier {
+typedef struct audio_dsp {
   uint32_t cnt;
   float coeffs_bpf[AUDIO_MODIFIER_FILTER_LEN];
   float coeffs_lpf_envelope[AUDIO_MODIFIER_FILTER_LEN];
@@ -30,7 +30,7 @@ typedef struct audio_modifier {
 
   ook_adaptive_threshold_t ook_thres;
   ook_edge_detector_t ook_edge;
-} audio_modifier_t;
+} audio_dsp_t;
 
 /**
  * @brief The core processing function for the audio modifier element.
@@ -42,7 +42,7 @@ static int _modifier_process(audio_element_handle_t self, char *in_buffer, int i
   __attribute__((aligned(16))) static float input[AUDIO_MODIFIER_N_SAMPLES];
   __attribute__((aligned(16))) static float output[AUDIO_MODIFIER_N_SAMPLES];
 
-  audio_modifier_t *mod = (audio_modifier_t *)audio_element_getdata(self);
+  audio_dsp_t *mod = (audio_dsp_t *)audio_element_getdata(self);
 
   int r_size = audio_element_input(self, in_buffer, in_len); // Read data
 
@@ -154,7 +154,7 @@ static esp_err_t _modifier_open(audio_element_handle_t self) {
  */
 static esp_err_t _modifier_close(audio_element_handle_t self) {
   ESP_LOGI(TAG, "Modifier element closed");
-  audio_modifier_t *mod = (audio_modifier_t *)audio_element_getdata(self);
+  audio_dsp_t *mod = (audio_dsp_t *)audio_element_getdata(self);
   ESP_LOGI(TAG, "Modifier CNT: %ul", (unsigned int)mod->cnt);
 
   // Check status, might be useful for debugging why it closed
@@ -173,7 +173,7 @@ static esp_err_t _modifier_close(audio_element_handle_t self) {
 static esp_err_t _modifier_destroy(audio_element_handle_t self) {
   ESP_LOGD(TAG, "Modifier element destroying");
 
-  audio_modifier_t *mod = (audio_modifier_t *)audio_element_getdata(self);
+  audio_dsp_t *mod = (audio_dsp_t *)audio_element_getdata(self);
 
   if (mod) {
     audio_free(mod);
@@ -185,11 +185,11 @@ static esp_err_t _modifier_destroy(audio_element_handle_t self) {
 /**
  * @brief Initialization function for the audio modifier element.
  */
-audio_element_handle_t audio_modifier_init(audio_modifier_cfg_t *config) {
+audio_element_handle_t audio_dsp_init(audio_dsp_cfg_t *config) {
   // Allocate memory for the element's specific data
-  audio_modifier_t *mod = audio_calloc(1, sizeof(audio_modifier_t));
+  audio_dsp_t *mod = audio_calloc(1, sizeof(audio_dsp_t));
   AUDIO_MEM_CHECK(TAG, mod, {
-    ESP_LOGE(TAG, "Failed to allocate memory for audio_modifier_t");
+    ESP_LOGE(TAG, "Failed to allocate memory for audio_dsp_t");
     return NULL;
   });
 

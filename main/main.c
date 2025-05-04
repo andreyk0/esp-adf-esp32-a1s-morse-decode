@@ -7,7 +7,7 @@
    CONDITIONS OF ANY KIND, either express or implied.
 */
 
-#include "audio_modifier.h"
+#include "audio_dsp.h"
 #include "audio_pipeline.h"
 #include "board.h"
 #include "esp_err.h"
@@ -25,7 +25,7 @@ static const char *TAG = "PASSTHRU";
 void app_main(void) {
   audio_pipeline_handle_t pipeline;
   audio_element_handle_t i2s_stream_writer, i2s_stream_reader,
-      audio_modifier_el;
+      audio_dsp_el;
 
   esp_log_level_set("*", ESP_LOG_INFO);
   esp_log_level_set(TAG, ESP_LOG_DEBUG);
@@ -49,13 +49,13 @@ void app_main(void) {
   i2s_stream_reader = i2s_stream_init(&i2s_cfg_read);
 
   ESP_LOGI(TAG, "[3.3] Create audio modifier element");
-  audio_modifier_cfg_t modifier_cfg = DEFAULT_AUDIO_MODIFIER_CONFIG();
-  audio_modifier_el = audio_modifier_init(&modifier_cfg);
-  mem_assert(audio_modifier_el);
+  audio_dsp_cfg_t modifier_cfg = DEFAULT_AUDIO_MODIFIER_CONFIG();
+  audio_dsp_el = audio_dsp_init(&modifier_cfg);
+  mem_assert(audio_dsp_el);
 
   ESP_LOGI(TAG, "[3.4] Register all elements to audio pipeline");
   audio_pipeline_register(pipeline, i2s_stream_reader, "i2s_read");
-  audio_pipeline_register(pipeline, audio_modifier_el, "modifier");
+  audio_pipeline_register(pipeline, audio_dsp_el, "modifier");
   audio_pipeline_register(pipeline, i2s_stream_writer, "i2s_write");
 
   ESP_LOGI(TAG,
@@ -103,7 +103,7 @@ void app_main(void) {
   audio_pipeline_terminate(pipeline);
 
   audio_pipeline_unregister(pipeline, i2s_stream_reader);
-  audio_pipeline_unregister(pipeline, audio_modifier_el);
+  audio_pipeline_unregister(pipeline, audio_dsp_el);
   audio_pipeline_unregister(pipeline, i2s_stream_writer);
 
   /* Terminate the pipeline before removing the listener */

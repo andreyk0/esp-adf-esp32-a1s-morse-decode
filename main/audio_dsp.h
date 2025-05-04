@@ -18,7 +18,7 @@ typedef struct {
   int task_core;     /*!< Task running core */
   int task_prio;     /*!< Task priority */
   bool extern_stack; /*!< Allocate stack on extern ram */
-} audio_modifier_cfg_t;
+} audio_dsp_cfg_t;
 
 // Default configuration values for the modifier element
 #define AUDIO_MODIFIER_BUF_SIZE (2048) // Internal buffer size for processing
@@ -50,7 +50,7 @@ typedef struct {
  *
  * @return     The audio element handle, or NULL if initialization fails.
  */
-audio_element_handle_t audio_modifier_init(audio_modifier_cfg_t *config);
+audio_element_handle_t audio_dsp_init(audio_dsp_cfg_t *config);
 
 #ifdef __cplusplus
 }
