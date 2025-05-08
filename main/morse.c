@@ -13,11 +13,12 @@
 #include <string.h>
 
 #include "decaying_histogram.h"
+#include "morse_decoder.h"
 
 static const char *TAG = "MORSE";
 
 // pulses shorted than this will be merged with the longer pulse, value is in units of time/sample
-static const int32_t PULSE_WIDTH_MIN = 300;
+static const int32_t PULSE_WIDTH_MIN = 200;
 static const int32_t PULSE_WIDTH_MAX = 12000;
 
 // keep ook range for display, larger is better
@@ -42,7 +43,9 @@ esp_err_t morse_init() {
     return ESP_ERR_INVALID_STATE;
   }
 
-  ESP_ERROR_CHECK(decaying_histogram_init(&dit_dah_len_his, PULSE_WIDTH_MIN, PULSE_WIDTH_MAX, 64, 0.8f));
+  ESP_ERROR_CHECK(decaying_histogram_init(&dit_dah_len_his, PULSE_WIDTH_MIN, PULSE_WIDTH_MAX, 128, 0.8f));
+
+  morse_decoder_init();
 
   ESP_LOGI(TAG, "Initialization complete");
   return ESP_OK;
@@ -51,6 +54,7 @@ esp_err_t morse_init() {
 void morse_sample_handler_task(void *pvParameters) {
   int32_t e = 0;
   int32_t th = 0;
+  int32_t dit_len = 0;
 
   while (1) {
     if (xQueueReceive(morse_ook_queue, &e, portMAX_DELAY) == pdTRUE) {
@@ -62,17 +66,32 @@ void morse_sample_handler_task(void *pvParameters) {
 
           if (abse > th) {
             ESP_LOGI(TAG, "-");
+            decode_morse_signal('-');
           } else {
             ESP_LOGI(TAG, "*");
+            decode_morse_signal('*');
           }
         }
       } else {
-        if (e > 2 * th) {
-          decaying_histogram_dump(&dit_dah_len_his);
+        dit_len = th / 2;
 
-          ESP_LOGI(TAG, "############## %u / %d", (unsigned int)range, (int)th);
-        } else if (e > th) {
-          ESP_LOGI(TAG, "-------");
+        if (e >= 3 * dit_len) {
+          decaying_histogram_dump(&dit_dah_len_his);
+          char c = decode_morse_signal(' ');
+
+          if (c) {
+            ESP_LOGW(TAG, "%c ###", c);
+          } else {
+            ESP_LOGI(TAG, "############## %u / %d", (unsigned int)range, (int)th);
+          }
+
+        } else if (e >= 2 * dit_len) {
+          char c = decode_morse_signal(' ');
+          if (c) {
+            ESP_LOGW(TAG, "%c", c);
+          } else {
+            ESP_LOGI(TAG, "-------");
+          }
         }
       }
       // ESP_LOGI(TAG, "E: %d / R: %u :: %d / %d", (int)e, (unsigned int)range, (int)dit_dah_len_thres.current_min,
