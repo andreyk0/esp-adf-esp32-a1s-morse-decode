@@ -1,5 +1,6 @@
 #include "morse.h"
 
+#include "char_buffer.h"
 #include "freertos/FreeRTOS.h"
 #include "freertos/queue.h"
 #include "freertos/task.h"
@@ -12,6 +13,7 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include "char_buffer.h"
 #include "decaying_histogram.h"
 #include "morse_decoder.h"
 
@@ -32,6 +34,9 @@ static decaying_histogram_t dit_dah_len_his;
 // pauses
 static decaying_histogram_t pause_len_his;
 
+static char_buffer_t *dit_dah_buf = NULL;
+static char_buffer_t *text_buf = NULL;
+
 esp_err_t morse_init() {
   morse_ook_queue = xQueueCreate(16, sizeof(uint32_t));
   ESP_RETURN_ON_FALSE(morse_ook_queue != NULL, ESP_ERR_INVALID_STATE, TAG, "failed to create queue");
@@ -48,6 +53,9 @@ esp_err_t morse_init() {
   ESP_ERROR_CHECK(decaying_histogram_init(&dit_dah_len_his, PULSE_WIDTH_MIN, PULSE_WIDTH_MAX, 128, 0.8f));
   ESP_ERROR_CHECK(decaying_histogram_init(&pause_len_his, PULSE_WIDTH_MIN / 2, PULSE_WIDTH_MAX * 8, 128, 0.8f));
 
+  dit_dah_buf = char_buffer_init(64);
+  text_buf = char_buffer_init(32);
+
   morse_decoder_init();
 
   ESP_LOGI(TAG, "Initialization complete");
@@ -61,8 +69,6 @@ void morse_sample_handler_task(void *pvParameters) {
   while (1) {
     if (xQueueReceive(morse_ook_queue, &e, portMAX_DELAY) == pdTRUE) {
       abse = abs(e);
-      char *eos = "---";
-      char *eow = "###";
 
       if (e < 0) {
         if (abse >= PULSE_WIDTH_MIN && abse < PULSE_WIDTH_MAX) {
@@ -72,9 +78,11 @@ void morse_sample_handler_task(void *pvParameters) {
           if (abse > th) {
             ESP_LOGI(TAG, "-");
             decode_morse_signal('-');
+            char_buffer_append_char(dit_dah_buf, '-');
           } else {
             ESP_LOGI(TAG, "*");
             decode_morse_signal('*');
+            char_buffer_append_char(dit_dah_buf, '*');
           }
         }
       } else {
@@ -83,18 +91,19 @@ void morse_sample_handler_task(void *pvParameters) {
 
         if (abse > th / 4) {
           char c = decode_morse_signal(' ');
-          char *estr = NULL;
+
+          char_buffer_append_char(text_buf, c);
 
           if (abse > th) {
-            estr = eow;
-          } else {
-            estr = eos;
+            ESP_LOGI(TAG, "%s", char_buffer_get_string(dit_dah_buf));
+            ESP_LOGI(TAG, "%s", char_buffer_get_string(text_buf));
           }
+
           if (c) {
-            ESP_LOGW(TAG, "%c %s", c, estr);
+            ESP_LOGI(TAG, "%c", c);
           } else {
             decaying_histogram_dump(&pause_len_his);
-            ESP_LOGI(TAG, "? %s %u / %d", estr, (unsigned int)range, (int)th);
+            ESP_LOGI(TAG, "? %u / %d", (unsigned int)range, (int)th);
           }
         } else {
           ESP_LOGI(TAG, "r");
