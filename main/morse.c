@@ -81,7 +81,7 @@ void morse_sample_handler_task(void *pvParameters) {
         decaying_histogram_add_sample(&pause_len_his, abse);
         int32_t th = decaying_histogram_get_threshold(&pause_len_his);
 
-        if (abse > PULSE_WIDTH_MIN) {
+        if (abse > th / 4) {
           char c = decode_morse_signal(' ');
           char *estr = NULL;
 
