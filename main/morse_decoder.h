@@ -12,6 +12,8 @@ void morse_decoder_init(void);
 
 char decode_morse_signal(char signal_input);
 
+void morse_decoder_reset(void);
+
 void morse_decoder_deinit(void);
 
 #endif // MORSE_DECODER_H_

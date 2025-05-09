@@ -29,6 +29,8 @@ static QueueHandle_t morse_ook_queue;
 
 // "dit/dah" pulse length histogram
 static decaying_histogram_t dit_dah_len_his;
+// pauses
+static decaying_histogram_t pause_len_his;
 
 esp_err_t morse_init() {
   morse_ook_queue = xQueueCreate(16, sizeof(uint32_t));
@@ -44,6 +46,7 @@ esp_err_t morse_init() {
   }
 
   ESP_ERROR_CHECK(decaying_histogram_init(&dit_dah_len_his, PULSE_WIDTH_MIN, PULSE_WIDTH_MAX, 128, 0.8f));
+  ESP_ERROR_CHECK(decaying_histogram_init(&pause_len_his, PULSE_WIDTH_MIN / 2, PULSE_WIDTH_MAX * 8, 128, 0.8f));
 
   morse_decoder_init();
 
@@ -58,8 +61,9 @@ void morse_sample_handler_task(void *pvParameters) {
 
   while (1) {
     if (xQueueReceive(morse_ook_queue, &e, portMAX_DELAY) == pdTRUE) {
+      int32_t abse = abs(e);
+
       if (e < 0) {
-        int32_t abse = abs(e);
         if (abse >= PULSE_WIDTH_MIN && abse < PULSE_WIDTH_MAX) {
           decaying_histogram_add_sample(&dit_dah_len_his, abse);
           th = decaying_histogram_get_threshold(&dit_dah_len_his);
@@ -73,29 +77,31 @@ void morse_sample_handler_task(void *pvParameters) {
           }
         }
       } else {
-        dit_len = th / 2;
+        decaying_histogram_add_sample(&pause_len_his, abse);
+        th = decaying_histogram_get_threshold(&pause_len_his);
 
-        if (e >= 3 * dit_len) {
-          decaying_histogram_dump(&dit_dah_len_his);
-          char c = decode_morse_signal(' ');
+        decaying_histogram_dump(&pause_len_his);
+        char c = decode_morse_signal(' ');
 
+        if (abse > th) {
           if (c) {
             ESP_LOGW(TAG, "%c ###", c);
           } else {
-            ESP_LOGI(TAG, "############## %u / %d", (unsigned int)range, (int)th);
+            ESP_LOGI(TAG, "? ### %u / %d", (unsigned int)range, (int)th);
           }
 
-        } else if (e >= 2 * dit_len) {
+        } else if (abse > th / 4) {
           char c = decode_morse_signal(' ');
           if (c) {
-            ESP_LOGW(TAG, "%c", c);
+            ESP_LOGW(TAG, "%c ---", c);
           } else {
-            ESP_LOGI(TAG, "-------");
+            ESP_LOGI(TAG, "? - %u / %d", (unsigned int)range, (int)th);
           }
+        } else {
+          ESP_LOGI(TAG, "r");
+          morse_decoder_reset();
         }
       }
-      // ESP_LOGI(TAG, "E: %d / R: %u :: %d / %d", (int)e, (unsigned int)range, (int)dit_dah_len_thres.current_min,
-      // (int)dit_dah_len_thres.current_max);
     }
   }
 }

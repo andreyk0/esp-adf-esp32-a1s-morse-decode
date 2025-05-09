@@ -203,6 +203,10 @@ char decode_morse_signal(char signal_input) {
     }
 }
 
+void morse_decoder_reset(void) {
+    current_node = morse_tree_root;
+}
+
 // Recursive helper to free tree nodes
 static void morse_decoder_deinit_recursive(MorseNode_t *node) {
     if (node == NULL) {
