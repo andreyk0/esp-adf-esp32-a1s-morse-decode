@@ -57,7 +57,6 @@ esp_err_t morse_init() {
 void morse_sample_handler_task(void *pvParameters) {
   int32_t e = 0;
   int32_t th = 0;
-  int32_t dit_len = 0;
 
   while (1) {
     if (xQueueReceive(morse_ook_queue, &e, portMAX_DELAY) == pdTRUE) {
