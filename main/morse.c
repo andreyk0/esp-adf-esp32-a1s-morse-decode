@@ -56,16 +56,18 @@ esp_err_t morse_init() {
 
 void morse_sample_handler_task(void *pvParameters) {
   int32_t e = 0;
-  int32_t th = 0;
+  int32_t abse = 0;
 
   while (1) {
     if (xQueueReceive(morse_ook_queue, &e, portMAX_DELAY) == pdTRUE) {
-      int32_t abse = abs(e);
+      abse = abs(e);
+      char *eos = "---";
+      char *eow = "###";
 
       if (e < 0) {
         if (abse >= PULSE_WIDTH_MIN && abse < PULSE_WIDTH_MAX) {
           decaying_histogram_add_sample(&dit_dah_len_his, abse);
-          th = decaying_histogram_get_threshold(&dit_dah_len_his);
+          int32_t th = decaying_histogram_get_threshold(&dit_dah_len_his);
 
           if (abse > th) {
             ESP_LOGI(TAG, "-");
@@ -77,23 +79,22 @@ void morse_sample_handler_task(void *pvParameters) {
         }
       } else {
         decaying_histogram_add_sample(&pause_len_his, abse);
-        th = decaying_histogram_get_threshold(&pause_len_his);
+        int32_t th = decaying_histogram_get_threshold(&pause_len_his);
 
-        if (abse > th) {
+        if (abse > PULSE_WIDTH_MIN) {
           char c = decode_morse_signal(' ');
+          char *estr = NULL;
+
+          if (abse > th) {
+            estr = eow;
+          } else {
+            estr = eos;
+          }
           if (c) {
-            ESP_LOGW(TAG, "%c ###", c);
+            ESP_LOGW(TAG, "%c %s", c, estr);
           } else {
             decaying_histogram_dump(&pause_len_his);
-            ESP_LOGI(TAG, "? ### %u / %d", (unsigned int)range, (int)th);
-          }
-
-        } else if (abse > PULSE_WIDTH_MIN) {
-          char c = decode_morse_signal(' ');
-          if (c) {
-            ESP_LOGW(TAG, "%c ---", c);
-          } else {
-            ESP_LOGI(TAG, "? - %u / %d", (unsigned int)range, (int)th);
+            ESP_LOGI(TAG, "? %s %u / %d", estr, (unsigned int)range, (int)th);
           }
         } else {
           ESP_LOGI(TAG, "r");
