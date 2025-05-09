@@ -92,21 +92,18 @@ void morse_sample_handler_task(void *pvParameters) {
         if (abse > th / 4) {
           char c = decode_morse_signal(' ');
 
-          char_buffer_append_char(text_buf, c);
-
-          if (abse > th) {
-            ESP_LOGI(TAG, "%s", char_buffer_get_string(dit_dah_buf));
-            ESP_LOGI(TAG, "%s", char_buffer_get_string(text_buf));
-          }
-
           if (c) {
+            char_buffer_append_char(text_buf, c);
             ESP_LOGI(TAG, "%c", c);
           } else {
             decaying_histogram_dump(&pause_len_his);
             ESP_LOGI(TAG, "? %u / %d", (unsigned int)range, (int)th);
           }
-        } else {
-          ESP_LOGI(TAG, "r");
+
+          if (abse > th) {
+            ESP_LOGW(TAG, "%s", char_buffer_get_string(dit_dah_buf));
+            ESP_LOGW(TAG, "%s", char_buffer_get_string(text_buf));
+          }
         }
       }
     }
