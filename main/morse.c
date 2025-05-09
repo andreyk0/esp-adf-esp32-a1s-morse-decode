@@ -89,7 +89,7 @@ void morse_sample_handler_task(void *pvParameters) {
             ESP_LOGI(TAG, "? ### %u / %d", (unsigned int)range, (int)th);
           }
 
-        } else if (abse > th / 4) {
+        } else if (abse > PULSE_WIDTH_MIN) {
           char c = decode_morse_signal(' ');
           if (c) {
             ESP_LOGW(TAG, "%c ---", c);
@@ -98,7 +98,6 @@ void morse_sample_handler_task(void *pvParameters) {
           }
         } else {
           ESP_LOGI(TAG, "r");
-          morse_decoder_reset();
         }
       }
     }
