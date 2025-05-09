@@ -79,13 +79,12 @@ void morse_sample_handler_task(void *pvParameters) {
         decaying_histogram_add_sample(&pause_len_his, abse);
         th = decaying_histogram_get_threshold(&pause_len_his);
 
-        decaying_histogram_dump(&pause_len_his);
-        char c = decode_morse_signal(' ');
-
         if (abse > th) {
+          char c = decode_morse_signal(' ');
           if (c) {
             ESP_LOGW(TAG, "%c ###", c);
           } else {
+            decaying_histogram_dump(&pause_len_his);
             ESP_LOGI(TAG, "? ### %u / %d", (unsigned int)range, (int)th);
           }
 
