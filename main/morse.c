@@ -101,6 +101,7 @@ void morse_sample_handler_task(void *pvParameters) {
           if (c) {
             if (!char_buffer_append_char(text_buf, c)) {
               log_buffers();
+              char_buffer_append_char(text_buf, c);
             }
             ESP_LOGI(TAG, "%c", c);
           } else {
