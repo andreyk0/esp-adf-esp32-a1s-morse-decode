@@ -112,6 +112,13 @@ static int _modifier_process(audio_element_handle_t self, char *in_buffer, int i
     if (e != 0) {
       uint32_t range = (uint32_t)mod->ook_thres.current_max - mod->ook_thres.current_min;
       ESP_ERROR_CHECK(morse_sample(e, range));
+
+      if (e > 0) {
+        samples[i * 2] = 1024;
+      } else {
+        samples[i * 2] = -1024;
+      }
+
       // size_t j = i * 2 + 1;
       // samples[j] += range;
     }
