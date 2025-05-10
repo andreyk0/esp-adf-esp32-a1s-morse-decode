@@ -88,7 +88,7 @@ void morse_sample_handler_task(void *pvParameters) {
         }
       } else {
         decaying_histogram_add_sample(&pause_len_his, abse);
-        int32_t th = decaying_histogram_get_threshold(&pause_len_his);
+        int32_t pause_th = decaying_histogram_get_threshold(&pause_len_his);
 
         if (abse >= dit_th) {
           char c = decode_morse_signal(' ');
@@ -98,10 +98,10 @@ void morse_sample_handler_task(void *pvParameters) {
             ESP_LOGI(TAG, "%c", c);
           } else {
             decaying_histogram_dump(&pause_len_his);
-            ESP_LOGI(TAG, "? %u / %d", (unsigned int)range, (int)th);
+            ESP_LOGI(TAG, "? r: %u ; dit: %d ; pause: %d", (unsigned int)range, (int) dit_th, (int)pause_th);
           }
 
-          if (abse > th) {
+          if (abse > pause_th) {
             ESP_LOGW(TAG, "%s", char_buffer_get_string(dit_dah_buf));
             ESP_LOGW(TAG, "%s", char_buffer_get_string(text_buf));
           }
