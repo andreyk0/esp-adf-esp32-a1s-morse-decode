@@ -3,6 +3,7 @@
  * @brief Implementation of the OOK edge detector.
  */
 #include "ook_edge_detector.h"
+#include "ook_adaptive_threshold.h"
 #include <assert.h>    // For assert() to catch NULL pointers in update
 #include <esp_check.h> // For ESP_RETURN_ON_FALSE checks
 #include <esp_log.h>   // For ESP logging
@@ -40,13 +41,18 @@ int32_t ook_edge_detector_update(ook_edge_detector_t *edge_state, int16_t sample
   ook_adaptive_threshold_update(edge_state->threshold_state, sample);
 
   // 2. Get the current threshold
-  int16_t current_threshold = ook_adaptive_threshold_get(edge_state->threshold_state);
+  int16_t current_threshold_positive_edge = ook_adaptive_threshold_get_positive_edge(edge_state->threshold_state);
+  int16_t current_threshold_negative_edge = ook_adaptive_threshold_get_negative_edge(edge_state->threshold_state);
 
   // 3. Determine the new state based on the current sample
-  bool new_state_is_below = (sample <= current_threshold); // Consistent check: <= means below or equal
+  bool new_state_is_positive = (sample >= current_threshold_positive_edge);
+  bool new_state_is_negative = (sample <= current_threshold_negative_edge);
+
+  bool is_rising_edge = new_state_is_positive && edge_state->below_threshold;
+  bool is_falling_edge = new_state_is_negative && (!edge_state->below_threshold);
 
   // 4. Check if the state has changed (edge detected)
-  if (new_state_is_below != edge_state->below_threshold) {
+  if (is_rising_edge || is_falling_edge) {
     // --- Edge Detected ---
     int32_t return_value = 0; // Changed to int32_t
     uint32_t samples_in_previous_state = edge_state->samples_in_state;
@@ -60,7 +66,7 @@ int32_t ook_edge_detector_update(ook_edge_detector_t *edge_state, int16_t sample
       clamped_count = (int32_t)samples_in_previous_state; // Cast to int32_t
     }
 
-    if (new_state_is_below) {
+    if (is_falling_edge) {
       // Falling edge (was above, now below)
       // Check if clamped_count is INT32_MAX to avoid overflow when negating
       if (clamped_count == INT32_MAX) {
@@ -70,16 +76,17 @@ int32_t ook_edge_detector_update(ook_edge_detector_t *edge_state, int16_t sample
         return_value = -clamped_count; // Negative value indicates falling edge
       }
       ESP_LOGV(TAG, "Falling edge detected after %ld samples above.", (long)clamped_count); // Use %ld for int32_t
-    } else {
+
+      edge_state->below_threshold = true;
+    } else if (is_rising_edge) {
       // Rising edge (was below, now above)
       return_value = clamped_count; // Positive value indicates rising edge
       ESP_LOGV(TAG, "Rising edge detected after %ld samples below.", (long)clamped_count); // Use %ld for int32_t
+
+      edge_state->below_threshold = false;
     }
 
-    // Update state and reset counter for the new state
-    edge_state->below_threshold = new_state_is_below;
     edge_state->samples_in_state = 1; // Start count for the new state
-
     return return_value;
   } else {
     // --- No Edge Detected ---

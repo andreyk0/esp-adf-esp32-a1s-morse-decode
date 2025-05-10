@@ -72,3 +72,16 @@ inline int16_t ook_adaptive_threshold_get(const ook_adaptive_threshold_t *state)
   // midpoint = min + (max - min) / 2
   return state->current_min + (state->current_max - state->current_min) / 2;
 }
+
+// "edge" functions add a bit of a hysteresis to threshold transitions,
+// adding them on the lower side because higher side has more variation due to signal fading in and out
+inline int16_t ook_adaptive_threshold_get_positive_edge(const ook_adaptive_threshold_t *state) {
+  return ook_adaptive_threshold_get(state);
+}
+
+// "edge" functions add a bit of a hysteresis to threshold transitions,
+// adding them on the lower side because higher side has more variation due to signal fading in and out
+inline int16_t ook_adaptive_threshold_get_negative_edge(const ook_adaptive_threshold_t *state) {
+  int16_t range = state->current_max - state->current_min;
+  return state->current_min + range / 4;
+}

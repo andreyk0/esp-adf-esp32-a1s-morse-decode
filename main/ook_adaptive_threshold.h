@@ -43,6 +43,10 @@ void ook_adaptive_threshold_update(ook_adaptive_threshold_t *state, int16_t samp
  */
 int16_t ook_adaptive_threshold_get(const ook_adaptive_threshold_t *state);
 
+int16_t ook_adaptive_threshold_get_positive_edge(const ook_adaptive_threshold_t *state);
+
+int16_t ook_adaptive_threshold_get_negative_edge(const ook_adaptive_threshold_t *state);
+
 #ifdef __cplusplus
 }
 #endif

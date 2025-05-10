@@ -105,6 +105,7 @@ void morse_sample_handler_task(void *pvParameters) {
               log_buffers();
               char_buffer_append_char(text_buf, c);
             }
+            char_buffer_append_char(dit_dah_buf, ' ');
             ESP_LOGI(TAG, "%c", c);
           } else {
             decaying_histogram_dump(&pause_len_his);
