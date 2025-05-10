@@ -20,7 +20,7 @@
 static const char *TAG = "MORSE";
 
 // pulses shorted than this will be merged with the longer pulse, value is in units of time/sample
-static const int32_t PULSE_WIDTH_MIN = 200;
+static const int32_t PULSE_WIDTH_MIN = 800;
 static const int32_t PULSE_WIDTH_MAX = 12000;
 
 // keep ook range for display, larger is better
