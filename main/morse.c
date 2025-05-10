@@ -65,6 +65,8 @@ esp_err_t morse_init() {
 static void log_buffers() {
   ESP_LOGW(TAG, "%s", char_buffer_get_string(dit_dah_buf));
   ESP_LOGW(TAG, "%s", char_buffer_get_string(text_buf));
+  char_buffer_reset(dit_dah_buf);
+  char_buffer_reset(text_buf);
 }
 
 void morse_sample_handler_task(void *pvParameters) {
