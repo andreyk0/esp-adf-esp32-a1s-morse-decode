@@ -65,6 +65,7 @@ esp_err_t morse_init() {
 void morse_sample_handler_task(void *pvParameters) {
   int32_t e = 0;
   int32_t abse = 0;
+  int32_t dit_th = 0;
 
   while (1) {
     if (xQueueReceive(morse_ook_queue, &e, portMAX_DELAY) == pdTRUE) {
@@ -73,9 +74,9 @@ void morse_sample_handler_task(void *pvParameters) {
       if (e < 0) {
         if (abse >= PULSE_WIDTH_MIN && abse < PULSE_WIDTH_MAX) {
           decaying_histogram_add_sample(&dit_dah_len_his, abse);
-          int32_t th = decaying_histogram_get_threshold(&dit_dah_len_his);
+          dit_th = decaying_histogram_get_threshold(&dit_dah_len_his);
 
-          if (abse > th) {
+          if (abse > dit_th) {
             ESP_LOGI(TAG, "-");
             decode_morse_signal('-');
             char_buffer_append_char(dit_dah_buf, '-');
@@ -89,7 +90,7 @@ void morse_sample_handler_task(void *pvParameters) {
         decaying_histogram_add_sample(&pause_len_his, abse);
         int32_t th = decaying_histogram_get_threshold(&pause_len_his);
 
-        if (abse > th / 4) {
+        if (abse >= dit_th) {
           char c = decode_morse_signal(' ');
 
           if (c) {
