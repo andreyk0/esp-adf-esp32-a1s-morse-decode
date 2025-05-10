@@ -50,8 +50,8 @@ esp_err_t morse_init() {
     return ESP_ERR_INVALID_STATE;
   }
 
-  ESP_ERROR_CHECK(decaying_histogram_init(&dit_dah_len_his, PULSE_WIDTH_MIN, PULSE_WIDTH_MAX, 128, 0.8f));
-  ESP_ERROR_CHECK(decaying_histogram_init(&pause_len_his, PULSE_WIDTH_MIN / 2, PULSE_WIDTH_MAX * 8, 128, 0.8f));
+  ESP_ERROR_CHECK(decaying_histogram_init(&dit_dah_len_his, PULSE_WIDTH_MIN, PULSE_WIDTH_MAX, 256, 0.8f));
+  ESP_ERROR_CHECK(decaying_histogram_init(&pause_len_his, PULSE_WIDTH_MIN / 2, PULSE_WIDTH_MAX * 8, 256, 0.8f));
 
   dit_dah_buf = char_buffer_init(64);
   text_buf = char_buffer_init(32);
