@@ -62,6 +62,11 @@ esp_err_t morse_init() {
   return ESP_OK;
 }
 
+static void log_buffers() {
+  ESP_LOGW(TAG, "%s", char_buffer_get_string(dit_dah_buf));
+  ESP_LOGW(TAG, "%s", char_buffer_get_string(text_buf));
+}
+
 void morse_sample_handler_task(void *pvParameters) {
   int32_t e = 0;
   int32_t abse = 0;
@@ -94,16 +99,17 @@ void morse_sample_handler_task(void *pvParameters) {
           char c = decode_morse_signal(' ');
 
           if (c) {
-            char_buffer_append_char(text_buf, c);
+            if (!char_buffer_append_char(text_buf, c)) {
+              log_buffers();
+            }
             ESP_LOGI(TAG, "%c", c);
           } else {
             decaying_histogram_dump(&pause_len_his);
-            ESP_LOGI(TAG, "? r: %u ; dit: %d ; pause: %d", (unsigned int)range, (int) dit_th, (int)pause_th);
+            ESP_LOGI(TAG, "? r: %u ; dit: %d ; pause: %d", (unsigned int)range, (int)dit_th, (int)pause_th);
           }
 
           if (abse > pause_th) {
-            ESP_LOGW(TAG, "%s", char_buffer_get_string(dit_dah_buf));
-            ESP_LOGW(TAG, "%s", char_buffer_get_string(text_buf));
+            log_buffers();
           }
         }
       }
