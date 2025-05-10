@@ -60,7 +60,7 @@ void configure_es8388(void) {
                                0xF8)); // ALC gain
 
   ESP_ERROR_CHECK(es8388_write(ES8388_ADCCONTROL11,
-                               0xF5)); // ALC target
+                               0xFA)); // ALC target
 
   // Set ADC I2S format and word length
   ESP_ERROR_CHECK(
