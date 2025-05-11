@@ -4,7 +4,6 @@
 #include "audio_mem.h" // For memory allocation functions like audio_calloc
 #include "esp_err.h"
 #include "esp_log.h"
-#include <cstdint>
 #include <dsp_common.h>
 #include <dsps_biquad.h>
 #include <dsps_biquad_gen.h>
@@ -113,7 +112,7 @@ static int _modifier_process(audio_element_handle_t self, char *in_buffer, int i
     if (e != 0) {
       uint32_t range = (uint32_t)mod->ook_thres.current_max - mod->ook_thres.current_min;
       ESP_ERROR_CHECK(morse_sample(e, range));
-      samples[i * 2] = INT32_MIN; // to debug edge transitions
+      samples[i * 2] = INT16_MIN; // to debug edge transitions
     }
   }
 
