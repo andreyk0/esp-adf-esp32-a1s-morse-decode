@@ -127,6 +127,7 @@ void morse_sample_handler_task(void *pvParameters) {
     } else {
       if (should_handle_last_pause) {
         handle_pause();
+        log_buffers();
       }
       should_handle_last_pause = false;
     }
