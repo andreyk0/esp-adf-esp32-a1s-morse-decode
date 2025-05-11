@@ -32,6 +32,9 @@ static decaying_histogram_t dit_dah_len_his;
 static char_buffer_t *dit_dah_buf = NULL;
 static char_buffer_t *text_buf = NULL;
 
+// current dit threshold
+int32_t dit_th = 0;
+
 esp_err_t morse_init() {
   morse_ook_queue = xQueueCreate(16, sizeof(uint32_t));
   ESP_RETURN_ON_FALSE(morse_ook_queue != NULL, ESP_ERR_INVALID_STATE, TAG, "failed to create queue");
@@ -63,49 +66,69 @@ static void log_buffers() {
   char_buffer_reset(text_buf);
 }
 
+static void handle_on_to_off_transition(int32_t abse) {
+  decaying_histogram_add_sample(&dit_dah_len_his, abse);
+  dit_th = decaying_histogram_get_threshold(&dit_dah_len_his);
+
+  if (abse >= dit_th) {
+    ESP_LOGI(TAG, "-");
+    decode_morse_signal('-');
+    char_buffer_append_char(dit_dah_buf, '-');
+  } else {
+    ESP_LOGI(TAG, "*");
+    decode_morse_signal('*');
+    char_buffer_append_char(dit_dah_buf, '*');
+  }
+}
+
+static void handle_pause() {
+  char c = decode_morse_signal(' ');
+
+  if (c) {
+    if (!char_buffer_append_char(text_buf, c)) {
+      log_buffers();
+      char_buffer_append_char(text_buf, c);
+    }
+    char_buffer_append_char(dit_dah_buf, ' ');
+    ESP_LOGI(TAG, "%c", c);
+  } else {
+    decaying_histogram_dump(&dit_dah_len_his);
+    ESP_LOGI(TAG, "? r: dit: %d", (int)dit_th);
+  }
+}
+
+static void handle_off_to_on_transition(int32_t abse) {
+  if (abse >= 2 * dit_th) {
+    handle_pause();
+
+    if (abse > 3 * dit_th) {
+      log_buffers();
+    }
+  }
+}
+
 void morse_sample_handler_task(void *pvParameters) {
   int32_t e = 0;
   int32_t abse = 0;
-  int32_t dit_th = 0;
+  bool should_handle_last_pause = true;
+
+  const TickType_t xTicksToWait = pdMS_TO_TICKS(1000); // 1sec max wait
 
   while (1) {
-    if (xQueueReceive(morse_ook_queue, &e, portMAX_DELAY) == pdTRUE) {
+    if (xQueueReceive(morse_ook_queue, &e, xTicksToWait) == pdTRUE) {
+      should_handle_last_pause = true;
       abse = abs(e);
 
-      if (e < 0) { // ON pulse ended
-        decaying_histogram_add_sample(&dit_dah_len_his, abse);
-        dit_th = decaying_histogram_get_threshold(&dit_dah_len_his);
-
-        if (abse >= dit_th) {
-          ESP_LOGI(TAG, "-");
-          decode_morse_signal('-');
-          char_buffer_append_char(dit_dah_buf, '-');
-        } else {
-          ESP_LOGI(TAG, "*");
-          decode_morse_signal('*');
-          char_buffer_append_char(dit_dah_buf, '*');
-        }
-      } else { // OFF pulse ended
-        if (abse >= 2 * dit_th) {
-          char c = decode_morse_signal(' ');
-
-          if (c) {
-            if (!char_buffer_append_char(text_buf, c)) {
-              log_buffers();
-              char_buffer_append_char(text_buf, c);
-            }
-            char_buffer_append_char(dit_dah_buf, ' ');
-            ESP_LOGI(TAG, "%c", c);
-          } else {
-            decaying_histogram_dump(&dit_dah_len_his);
-            ESP_LOGI(TAG, "? r: dit: %d", (int)dit_th);
-          }
-
-          if (abse > 3 * dit_th) {
-            log_buffers();
-          }
-        }
+      if (e < 0) {
+        handle_on_to_off_transition(abse);
+      } else {
+        handle_off_to_on_transition(abse);
       }
+    } else {
+      if (should_handle_last_pause) {
+        handle_pause();
+      }
+      should_handle_last_pause = false;
     }
   }
 }
