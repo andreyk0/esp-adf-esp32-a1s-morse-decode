@@ -102,7 +102,7 @@ void morse_sample_handler_task(void *pvParameters) {
             char_buffer_append_char(dit_dah_buf, ' ');
             ESP_LOGI(TAG, "%c", c);
           } else {
-            ESP_LOGI(TAG, "? r: %u ; dit: %d ; pause: %d", (unsigned int)range, (int)dit_th, (int)pause_th);
+            ESP_LOGI(TAG, "? r: %u ; dit: %d", (unsigned int)range, (int)dit_th);
           }
 
           if (abse > 3 * dit_th) {
