@@ -90,7 +90,7 @@ esp_err_t decaying_histogram_get_min_max_bins(const decaying_histogram_t *hist, 
     return ESP_ERR_INVALID_ARG;
   }
 
-  float max_count = -FLT_MAX;
+  float max_count = FLT_MIN;
   *min_bin_index = -1;
   *max_bin_index = -1;
 
@@ -100,7 +100,7 @@ esp_err_t decaying_histogram_get_min_max_bins(const decaying_histogram_t *hist, 
     *max_bin_index = i;
   }
 
-  max_count = -FLT_MAX;
+  max_count = FLT_MIN;
 
   // find highest max
   for (int i = hist->num_bins - 1; (i >= 0) && (hist->bins[i] > max_count); i--) {
