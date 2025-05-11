@@ -80,7 +80,7 @@ void morse_sample_handler_task(void *pvParameters) {
           decaying_histogram_add_sample(&dit_dah_len_his, abse);
           dit_th = decaying_histogram_get_threshold(&dit_dah_len_his);
 
-          if (abse > dit_th) {
+          if (abse >= dit_th) {
             ESP_LOGI(TAG, "-");
             decode_morse_signal('-');
             char_buffer_append_char(dit_dah_buf, '-');
