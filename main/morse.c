@@ -73,19 +73,17 @@ void morse_sample_handler_task(void *pvParameters) {
       abse = abs(e);
 
       if (e < 0) { // ON pulse ended
-        if (abse >= PULSE_WIDTH_MIN && abse < PULSE_WIDTH_MAX) {
-          decaying_histogram_add_sample(&dit_dah_len_his, abse);
-          dit_th = decaying_histogram_get_threshold(&dit_dah_len_his);
+        decaying_histogram_add_sample(&dit_dah_len_his, abse);
+        dit_th = decaying_histogram_get_threshold(&dit_dah_len_his);
 
-          if (abse >= dit_th) {
-            ESP_LOGI(TAG, "-");
-            decode_morse_signal('-');
-            char_buffer_append_char(dit_dah_buf, '-');
-          } else {
-            ESP_LOGI(TAG, "*");
-            decode_morse_signal('*');
-            char_buffer_append_char(dit_dah_buf, '*');
-          }
+        if (abse >= dit_th) {
+          ESP_LOGI(TAG, "-");
+          decode_morse_signal('-');
+          char_buffer_append_char(dit_dah_buf, '-');
+        } else {
+          ESP_LOGI(TAG, "*");
+          decode_morse_signal('*');
+          char_buffer_append_char(dit_dah_buf, '*');
         }
       } else { // OFF pulse ended
         if (abse >= 2 * dit_th) {
