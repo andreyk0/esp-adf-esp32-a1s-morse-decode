@@ -31,8 +31,6 @@ static QueueHandle_t morse_ook_queue;
 
 // "dit/dah" pulse length histogram
 static decaying_histogram_t dit_dah_len_his;
-// pauses
-static decaying_histogram_t pause_len_his;
 
 static char_buffer_t *dit_dah_buf = NULL;
 static char_buffer_t *text_buf = NULL;
@@ -51,7 +49,6 @@ esp_err_t morse_init() {
   }
 
   ESP_ERROR_CHECK(decaying_histogram_init(&dit_dah_len_his, PULSE_WIDTH_MIN, PULSE_WIDTH_MAX, 256, 0.8f));
-  ESP_ERROR_CHECK(decaying_histogram_init(&pause_len_his, PULSE_WIDTH_MIN / 2, PULSE_WIDTH_MAX * 8, 256, 0.8f));
 
   dit_dah_buf = char_buffer_init(64);
   text_buf = char_buffer_init(32);
@@ -94,10 +91,7 @@ void morse_sample_handler_task(void *pvParameters) {
           }
         }
       } else {
-        decaying_histogram_add_sample(&pause_len_his, abse);
-        int32_t pause_th = decaying_histogram_get_threshold(&pause_len_his);
-
-        if (abse >= dit_th) {
+        if (abse >= 2 * dit_th) {
           char c = decode_morse_signal(' ');
 
           if (c) {
@@ -108,11 +102,10 @@ void morse_sample_handler_task(void *pvParameters) {
             char_buffer_append_char(dit_dah_buf, ' ');
             ESP_LOGI(TAG, "%c", c);
           } else {
-            decaying_histogram_dump(&pause_len_his);
             ESP_LOGI(TAG, "? r: %u ; dit: %d ; pause: %d", (unsigned int)range, (int)dit_th, (int)pause_th);
           }
 
-          if (abse > pause_th) {
+          if (abse > 3 * dit_th) {
             log_buffers();
           }
         }
