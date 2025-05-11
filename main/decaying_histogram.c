@@ -39,6 +39,12 @@ void decaying_histogram_dump(const decaying_histogram_t *hist) {
     }
   }
 
+  int32_t minidx;
+  int32_t maxidx;
+
+  ESP_ERROR_CHECK(decaying_histogram_get_min_max_bins(hist, &minidx, &maxidx));
+  ESP_LOGI(TAG, "minidx=%d\tmaxidx=%d", (int)minidx, (int)maxidx);
+
   int32_t minv;
   int32_t maxv;
 
@@ -90,7 +96,7 @@ esp_err_t decaying_histogram_get_min_max_bins(const decaying_histogram_t *hist, 
     return ESP_ERR_INVALID_ARG;
   }
 
-  float max_count = FLT_MIN;
+  float max_count = -FLT_MIN;
   *min_bin_index = -1;
   *max_bin_index = -1;
 
@@ -100,7 +106,7 @@ esp_err_t decaying_histogram_get_min_max_bins(const decaying_histogram_t *hist, 
     *max_bin_index = i;
   }
 
-  max_count = FLT_MIN;
+  max_count = -FLT_MIN;
 
   // find highest max
   for (int i = hist->num_bins - 1; (i >= 0) && (hist->bins[i] > max_count); i--) {
@@ -112,7 +118,7 @@ esp_err_t decaying_histogram_get_min_max_bins(const decaying_histogram_t *hist, 
     *min_bin_index = 0; // Handle case where all bins are zero
   }
   if (*max_bin_index == -1 && hist->num_bins > 0) {
-    *max_bin_index = 0; // Handle case where all bins are zero
+    *max_bin_index = hist->num_bins - 1; // Handle case where all bins are zero
   }
 
   return ESP_OK;
