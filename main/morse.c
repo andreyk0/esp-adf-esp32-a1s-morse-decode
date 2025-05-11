@@ -20,7 +20,7 @@
 static const char *TAG = "MORSE";
 
 // pulses shorted than this will be merged with the longer pulse, value is in units of time/sample
-static const int32_t PULSE_WIDTH_MIN = 800;
+static const int32_t PULSE_WIDTH_MIN = 200;
 static const int32_t PULSE_WIDTH_MAX = 12000;
 
 // keep ook range for display, larger is better
@@ -102,6 +102,7 @@ void morse_sample_handler_task(void *pvParameters) {
             char_buffer_append_char(dit_dah_buf, ' ');
             ESP_LOGI(TAG, "%c", c);
           } else {
+            decaying_histogram_dump(&dit_dah_len_his);
             ESP_LOGI(TAG, "? r: %u ; dit: %d", (unsigned int)range, (int)dit_th);
           }
 
