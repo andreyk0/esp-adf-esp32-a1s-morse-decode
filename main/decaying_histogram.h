@@ -12,12 +12,19 @@ typedef struct {
   float *bins;
   int32_t min_val;
   int32_t max_val;
+
+  // total number of bins
   int num_bins;
+
+  // Number of bins around max that a signal is assumed to spread into due to jitter,
+  // these will be excluded when looking for a 2nd max.
+  int num_bins_signal_spread;
+
   float decay_exponent;
   float bin_width;
 } decaying_histogram_t;
 
-esp_err_t decaying_histogram_init(decaying_histogram_t *hist, int32_t min_val, int32_t max_val, uint32_t num_bins,
+esp_err_t decaying_histogram_init(decaying_histogram_t *hist, int32_t min_val, int32_t max_val, uint32_t num_bins, uint32_t num_bins_signal_spread,
                                   float decay_exponent);
 
 void decaying_histogram_dump(const decaying_histogram_t *hist);

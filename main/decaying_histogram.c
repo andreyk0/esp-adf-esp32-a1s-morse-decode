@@ -12,7 +12,7 @@
 static const char *TAG = "HIST";
 
 esp_err_t decaying_histogram_init(decaying_histogram_t *hist, int32_t min_val, int32_t max_val, uint32_t num_bins,
-                                  float decay_exponent) {
+                                  uint32_t num_bins_signal_spread, float decay_exponent) {
   if (hist == NULL || num_bins == 0 || decay_exponent <= 0.0f || decay_exponent >= 1.0f || min_val >= max_val) {
     return ESP_ERR_INVALID_ARG;
   }
@@ -25,6 +25,7 @@ esp_err_t decaying_histogram_init(decaying_histogram_t *hist, int32_t min_val, i
   hist->min_val = min_val;
   hist->max_val = max_val;
   hist->num_bins = num_bins;
+  hist->num_bins_signal_spread = num_bins_signal_spread;
   hist->decay_exponent = decay_exponent;
   hist->bin_width = (float)(max_val - min_val) / num_bins;
 
@@ -96,22 +97,38 @@ esp_err_t decaying_histogram_get_min_max_bins(const decaying_histogram_t *hist, 
     return ESP_ERR_INVALID_ARG;
   }
 
-  float max_count = -FLT_MAX;
-  *min_bin_index = 0;
-  *max_bin_index = hist->num_bins - 1;
+  // Find 2 maximums, assuming spread of values is constrained to a few bins around actual max.
+  // The distribution should have 2 peaks but they can be of unequal value due
+  // to the application of decay and fiffering sequences of repeated symbols.
 
-  // find highest max
-  for (int i = hist->num_bins - 1; (i >= 0) && (hist->bins[i] > (max_count - 0.2)); i--) {
-    max_count = hist->bins[i];
-    *max_bin_index = i;
+  float count = -FLT_MAX;
+  int32_t max1_idx = 0;
+
+  for (int i = 0; i < hist->num_bins; i++) {
+    if (hist->bins[i] > count) {
+      count = hist->bins[i];
+      max1_idx = i;
+    }
   }
 
-  // find lowest max
-  max_count = -FLT_MAX;
+  int32_t max2_idx = 0;
+  int32_t excluded_lower_idx = max1_idx - hist->num_bins_signal_spread;
+  int32_t excluded_upper_idx = max1_idx + hist->num_bins_signal_spread;
+  count = -FLT_MAX;
 
-  for (int i = 0; (i < *max_bin_index) && (hist->bins[i] > (max_count - 0.2)); i++) {
-    max_count = hist->bins[i];
-    *min_bin_index = i;
+  for (int i = 0; i < hist->num_bins; i++) {
+    if (hist->bins[i] > count && (i < excluded_lower_idx || i > excluded_upper_idx)) {
+      count = hist->bins[i];
+      max2_idx = i;
+    }
+  }
+
+  if (max1_idx > max2_idx) {
+    *max_bin_index = max1_idx;
+    *min_bin_index = max2_idx;
+  } else {
+    *max_bin_index = max2_idx;
+    *min_bin_index = max1_idx;
   }
 
   return ESP_OK;
