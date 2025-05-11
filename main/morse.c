@@ -20,11 +20,8 @@
 static const char *TAG = "MORSE";
 
 // pulses shorted than this will be merged with the longer pulse, value is in units of time/sample
-static const int32_t PULSE_WIDTH_MIN = 200;
+static const int32_t PULSE_WIDTH_MIN = 1000;
 static const int32_t PULSE_WIDTH_MAX = 12000;
-
-// keep ook range for display, larger is better
-static uint32_t range = 0;
 
 // Queue of decoded edge transitions, uint32_t elements
 static QueueHandle_t morse_ook_queue;
@@ -75,7 +72,7 @@ void morse_sample_handler_task(void *pvParameters) {
     if (xQueueReceive(morse_ook_queue, &e, portMAX_DELAY) == pdTRUE) {
       abse = abs(e);
 
-      if (e < 0) {
+      if (e < 0) { // ON pulse ended
         if (abse >= PULSE_WIDTH_MIN && abse < PULSE_WIDTH_MAX) {
           decaying_histogram_add_sample(&dit_dah_len_his, abse);
           dit_th = decaying_histogram_get_threshold(&dit_dah_len_his);
@@ -90,7 +87,7 @@ void morse_sample_handler_task(void *pvParameters) {
             char_buffer_append_char(dit_dah_buf, '*');
           }
         }
-      } else {
+      } else { // OFF pulse ended
         if (abse >= 2 * dit_th) {
           char c = decode_morse_signal(' ');
 
@@ -103,7 +100,7 @@ void morse_sample_handler_task(void *pvParameters) {
             ESP_LOGI(TAG, "%c", c);
           } else {
             decaying_histogram_dump(&dit_dah_len_his);
-            ESP_LOGI(TAG, "? r: %u ; dit: %d", (unsigned int)range, (int)dit_th);
+            ESP_LOGI(TAG, "? r: dit: %d", (int)dit_th);
           }
 
           if (abse > 3 * dit_th) {

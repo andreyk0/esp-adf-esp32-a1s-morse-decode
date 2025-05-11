@@ -38,6 +38,12 @@ void decaying_histogram_dump(const decaying_histogram_t *hist) {
       ESP_LOGI(TAG, "v[%d]=%.1f\t%.1f", (int)i, hist->bins[i], bval);
     }
   }
+
+  int32_t minv;
+  int32_t maxv;
+
+  decaying_histogram_get_min_max_values(hist, &minv, &maxv);
+  ESP_LOGI(TAG, "min=%d\tmax=%d", (int)minv, (int)maxv);
 }
 
 void decaying_histogram_add_sample(decaying_histogram_t *hist, int32_t sample) {
