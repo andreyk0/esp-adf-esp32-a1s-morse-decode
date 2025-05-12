@@ -29,8 +29,8 @@ esp_err_t ook_adaptive_threshold_init(ook_adaptive_threshold_t *state, uint32_t 
   state->decay_step = decay_step;
   state->min_range = min_range;
 
-  ESP_LOGI(TAG, "Initialized: min=%d, max=%d, step=%u, min_range=%u", state->current_min, state->current_max,
-           state->decay_step, state->min_range);
+  ESP_LOGI(TAG, "Initialized: min=%ld, max=%ld, step=%lu, min_range=%lu", (long int)state->current_min,
+           (long int)state->current_max, (long unsigned int)state->decay_step, (long unsigned int)state->min_range);
   return ESP_OK;
 }
 
@@ -61,9 +61,6 @@ void ook_adaptive_threshold_update(ook_adaptive_threshold_t *state, int32_t samp
       ESP_LOGV(TAG, "Min/Max crossed during decay, reset to %d", state->current_min);
     }
   }
-
-  // ESP_LOGV(TAG, "Update: s=%d -> min=%d max=%d", sample, state->current_min,
-  // state->current_max);
 }
 
 inline int32_t ook_adaptive_threshold_get(const ook_adaptive_threshold_t *state) {
