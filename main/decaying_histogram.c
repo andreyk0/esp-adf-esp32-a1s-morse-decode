@@ -68,7 +68,7 @@ void decaying_histogram_add_sample(decaying_histogram_t *hist, int32_t sample) {
     return;
   }
 
-  decaying_histogram_decay((hist);
+  decaying_histogram_decay(hist);
 
   // Calculate the bin index for the new sample
   if (sample >= hist->min_val && sample <= hist->max_val) {
