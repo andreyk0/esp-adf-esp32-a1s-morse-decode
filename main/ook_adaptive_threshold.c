@@ -58,7 +58,7 @@ void ook_adaptive_threshold_update(ook_adaptive_threshold_t *state, int32_t samp
     // shouldn't happen
     if (state->current_min > state->current_max) {
       state->current_max = state->current_min + state->min_range + state->decay_step;
-      ESP_LOGV(TAG, "Min/Max crossed during decay, reset to %d", state->current_min);
+      ESP_LOGV(TAG, "Min/Max crossed during decay, reset to %ld", (long int)state->current_min);
     }
   }
 }
