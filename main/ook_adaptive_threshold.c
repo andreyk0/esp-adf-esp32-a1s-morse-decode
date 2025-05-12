@@ -14,12 +14,12 @@
 static const char *TAG = "OOKT";
 
 // Helper macro for integer min/max (stdlib.h doesn't have standard int min/max)
-#define INT16_MINIMUM(a, b) (((a) < (b)) ? (a) : (b))
-#define INT16_MAXIMUM(a, b) (((a) > (b)) ? (a) : (b))
+#define INT32_MINIMUM(a, b) (((a) < (b)) ? (a) : (b))
+#define INT32_MAXIMUM(a, b) (((a) > (b)) ? (a) : (b))
 
 // --- Function Implementations ---
 
-esp_err_t ook_adaptive_threshold_init(ook_adaptive_threshold_t *state, uint16_t decay_step, uint16_t min_range) {
+esp_err_t ook_adaptive_threshold_init(ook_adaptive_threshold_t *state, uint32_t decay_step, uint32_t min_range) {
   ESP_RETURN_ON_FALSE(state != NULL, ESP_ERR_INVALID_ARG, TAG, "State pointer cannot be NULL");
   ESP_RETURN_ON_FALSE(decay_step > 0, ESP_ERR_INVALID_ARG, TAG, "Decay step must be positive");
   ESP_RETURN_ON_FALSE(min_range > 2 * decay_step, ESP_ERR_INVALID_ARG, TAG, "Invalid min range");
@@ -34,17 +34,17 @@ esp_err_t ook_adaptive_threshold_init(ook_adaptive_threshold_t *state, uint16_t 
   return ESP_OK;
 }
 
-void ook_adaptive_threshold_update(ook_adaptive_threshold_t *state, int16_t sample) {
+void ook_adaptive_threshold_update(ook_adaptive_threshold_t *state, int32_t sample) {
   // 1. Update min/max bounds with the new sample
-  state->current_min = INT16_MINIMUM(state->current_min, sample);
-  state->current_max = INT16_MAXIMUM(state->current_max, sample);
+  state->current_min = INT32_MINIMUM(state->current_min, sample);
+  state->current_max = INT32_MAXIMUM(state->current_max, sample);
 
   // 2. Apply additive decay - move min and max towards the midpoint
   // Check if max > min to avoid issues if they become equal/inverted
   // Only decay if the range is larger than twice the step size to prevent
   // crossing
   if (state->current_max > state->current_min &&
-      ((uint16_t)state->current_max - state->current_min) >= state->min_range) {
+      ((uint32_t)state->current_max - state->current_min) >= state->min_range) {
 
     // Move max or min only, to avoid skewing midpoint too much when decoding a run of samples in a particular state
     if (sample > ook_adaptive_threshold_get(state)) {
@@ -66,22 +66,22 @@ void ook_adaptive_threshold_update(ook_adaptive_threshold_t *state, int16_t samp
   // state->current_max);
 }
 
-inline int16_t ook_adaptive_threshold_get(const ook_adaptive_threshold_t *state) {
+inline int32_t ook_adaptive_threshold_get(const ook_adaptive_threshold_t *state) {
   // Threshold is the midpoint of the current estimated range
-  // Use safer calculation to prevent potential overflow if min+max > INT16_MAX
+  // Use safer calculation to prevent potential overflow if min+max > INT32_MAX
   // midpoint = min + (max - min) / 2
   return state->current_min + (state->current_max - state->current_min) / 2;
 }
 
 // "edge" functions add a bit of a hysteresis to threshold transitions,
 // adding them on the lower side because higher side has more variation due to signal fading in and out
-inline int16_t ook_adaptive_threshold_get_positive_edge(const ook_adaptive_threshold_t *state) {
+inline int32_t ook_adaptive_threshold_get_positive_edge(const ook_adaptive_threshold_t *state) {
   return ook_adaptive_threshold_get(state);
 }
 
 // "edge" functions add a bit of a hysteresis to threshold transitions,
 // adding them on the lower side because higher side has more variation due to signal fading in and out
-inline int16_t ook_adaptive_threshold_get_negative_edge(const ook_adaptive_threshold_t *state) {
-  int16_t range = state->current_max - state->current_min;
+inline int32_t ook_adaptive_threshold_get_negative_edge(const ook_adaptive_threshold_t *state) {
+  int32_t range = state->current_max - state->current_min;
   return state->current_min + range / 4;
 }
