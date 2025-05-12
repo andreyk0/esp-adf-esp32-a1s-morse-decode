@@ -71,14 +71,12 @@ inline int32_t ook_adaptive_threshold_get(const ook_adaptive_threshold_t *state)
 }
 
 // "edge" functions add a bit of a hysteresis to threshold transitions,
-// adding them on the lower side because higher side has more variation due to signal fading in and out
-inline int32_t ook_adaptive_threshold_get_positive_edge(const ook_adaptive_threshold_t *state) {
-  return ook_adaptive_threshold_get(state);
-}
 
-// "edge" functions add a bit of a hysteresis to threshold transitions,
-// adding them on the lower side because higher side has more variation due to signal fading in and out
+inline int32_t ook_adaptive_threshold_get_positive_edge(const ook_adaptive_threshold_t *state) {
+  int32_t range = state->current_max - state->current_min;
+  return state->current_min + (range / 4)*3;
+}
 inline int32_t ook_adaptive_threshold_get_negative_edge(const ook_adaptive_threshold_t *state) {
   int32_t range = state->current_max - state->current_min;
-  return state->current_min + range / 4;
+  return state->current_min + range / 2;
 }
