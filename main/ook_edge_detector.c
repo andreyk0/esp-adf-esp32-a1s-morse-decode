@@ -27,8 +27,8 @@ esp_err_t ook_edge_detector_init(ook_edge_detector_t *edge_state, ook_adaptive_t
   int32_t initial_threshold = ook_adaptive_threshold_get(edge_state->threshold_state);
   edge_state->below_threshold = (initial_sample <= initial_threshold); // Use <= for below to match '>' check later
 
-  ESP_LOGD(TAG, "Initialized: Initial sample=%d, Initial threshold=%d, Starting state=%s", initial_sample,
-           initial_threshold, edge_state->below_threshold ? "Below" : "Above");
+  ESP_LOGD(TAG, "Initialized: Initial sample=%ld, Initial threshold=%ld, Starting state=%s", (long int) initial_sample,
+           (long int) initial_threshold, edge_state->below_threshold ? "Below" : "Above");
 
   // Initialize counter after determining state
   edge_state->samples_in_state = 1; // First sample counts as 1 sample in the initial state
