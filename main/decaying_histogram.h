@@ -24,10 +24,12 @@ typedef struct {
   float bin_width;
 } decaying_histogram_t;
 
-esp_err_t decaying_histogram_init(decaying_histogram_t *hist, int32_t min_val, int32_t max_val, uint32_t num_bins, uint32_t num_bins_signal_spread,
-                                  float decay_exponent);
+esp_err_t decaying_histogram_init(decaying_histogram_t *hist, int32_t min_val, int32_t max_val, uint32_t num_bins,
+                                  uint32_t num_bins_signal_spread, float decay_exponent);
 
 void decaying_histogram_dump(const decaying_histogram_t *hist);
+
+void decaying_histogram_decay(decaying_histogram_t *hist);
 
 void decaying_histogram_add_sample(decaying_histogram_t *hist, int32_t sample);
 

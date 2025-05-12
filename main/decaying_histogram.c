@@ -53,15 +53,22 @@ void decaying_histogram_dump(const decaying_histogram_t *hist) {
   ESP_LOGI(TAG, "min=%d\tmax=%d", (int)minv, (int)maxv);
 }
 
+inline void decaying_histogram_decay(decaying_histogram_t *hist) {
+  if (hist == NULL || hist->bins == NULL) {
+    return;
+  }
+
+  for (uint32_t i = 0; i < hist->num_bins; i++) {
+    hist->bins[i] *= hist->decay_exponent;
+  }
+}
+
 void decaying_histogram_add_sample(decaying_histogram_t *hist, int32_t sample) {
   if (hist == NULL || hist->bins == NULL) {
     return;
   }
 
-  // Apply decay to all bins
-  for (uint32_t i = 0; i < hist->num_bins; i++) {
-    hist->bins[i] *= hist->decay_exponent;
-  }
+  decaying_histogram_decay((hist);
 
   // Calculate the bin index for the new sample
   if (sample >= hist->min_val && sample <= hist->max_val) {

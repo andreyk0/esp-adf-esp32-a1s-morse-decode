@@ -130,6 +130,7 @@ void morse_sample_handler_task(void *pvParameters) {
         log_buffers();
       }
       should_handle_last_pause = false;
+      decaying_histogram_decay(&dit_dah_len_his);
     }
   }
 }
