@@ -87,7 +87,7 @@ static int _modifier_process(audio_element_handle_t self, char *in_buffer, int i
   }
 
   for (int i = 0; i < num_samples_filter; i++) {
-    input[i] = (float)samples[i * 2] / 4;
+    input[i] = (float)samples[i * 2];
   }
 
   // BPF
@@ -95,7 +95,7 @@ static int _modifier_process(audio_element_handle_t self, char *in_buffer, int i
 
   // Envelope
   for (int i = 0; i < num_samples_filter; i++) {
-    input[i] = -20000.0 + fabs(output[i]);
+    input[i] = -20000.0 + fmin(INT16_MAX, fabs(output[i]));
   }
 
   // LPF over envelope
@@ -112,7 +112,7 @@ static int _modifier_process(audio_element_handle_t self, char *in_buffer, int i
     if (e != 0) {
       uint32_t range = (uint32_t)mod->ook_thres.current_max - mod->ook_thres.current_min;
       ESP_ERROR_CHECK(morse_sample(e, range));
-      samples[i * 2] = INT16_MIN; // to debug edge transitions
+      samples[i * 2] = INT16_MIN/4; // to debug edge transitions
     }
   }
 
