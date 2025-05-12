@@ -15,7 +15,7 @@ static const char *TAG = "OOKE";
 // --- Function Implementations ---
 
 esp_err_t ook_edge_detector_init(ook_edge_detector_t *edge_state, ook_adaptive_threshold_t *threshold_state,
-                                 int16_t initial_sample) {
+                                 int32_t initial_sample) {
 
   edge_state->threshold_state = threshold_state;
   edge_state->samples_in_state = 0; // Start counter at 0, update will increment to 1
@@ -24,7 +24,7 @@ esp_err_t ook_edge_detector_init(ook_edge_detector_t *edge_state, ook_adaptive_t
   // Note: Threshold state might not be fully adapted yet, but this sets a starting point.
   // Update threshold state *before* getting the initial threshold
   ook_adaptive_threshold_update(edge_state->threshold_state, initial_sample);
-  int16_t initial_threshold = ook_adaptive_threshold_get(edge_state->threshold_state);
+  int32_t initial_threshold = ook_adaptive_threshold_get(edge_state->threshold_state);
   edge_state->below_threshold = (initial_sample <= initial_threshold); // Use <= for below to match '>' check later
 
   ESP_LOGD(TAG, "Initialized: Initial sample=%d, Initial threshold=%d, Starting state=%s", initial_sample,
@@ -36,13 +36,13 @@ esp_err_t ook_edge_detector_init(ook_edge_detector_t *edge_state, ook_adaptive_t
   return ESP_OK;
 }
 
-int32_t ook_edge_detector_update(ook_edge_detector_t *edge_state, int16_t sample) {
+int32_t ook_edge_detector_update(ook_edge_detector_t *edge_state, int32_t sample) {
   // 1. Update the adaptive threshold first
   ook_adaptive_threshold_update(edge_state->threshold_state, sample);
 
   // 2. Get the current threshold
-  int16_t current_threshold_positive_edge = ook_adaptive_threshold_get_positive_edge(edge_state->threshold_state);
-  int16_t current_threshold_negative_edge = ook_adaptive_threshold_get_negative_edge(edge_state->threshold_state);
+  int32_t current_threshold_positive_edge = ook_adaptive_threshold_get_positive_edge(edge_state->threshold_state);
+  int32_t current_threshold_negative_edge = ook_adaptive_threshold_get_negative_edge(edge_state->threshold_state);
 
   // 3. Determine the new state based on the current sample
   bool new_state_is_positive = (sample >= current_threshold_positive_edge);

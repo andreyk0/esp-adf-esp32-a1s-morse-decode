@@ -33,7 +33,7 @@ typedef struct
  * - ESP_OK on success
  * - ESP_ERR_INVALID_ARG if edge_state or threshold_state is NULL.
  */
-esp_err_t ook_edge_detector_init(ook_edge_detector_t *edge_state, ook_adaptive_threshold_t *threshold_state, int16_t initial_sample);
+esp_err_t ook_edge_detector_init(ook_edge_detector_t *edge_state, ook_adaptive_threshold_t *threshold_state, int32_t initial_sample);
 
 /**
  * @brief Updates the edge detector with a new sample and detects edges.
@@ -56,14 +56,14 @@ esp_err_t ook_edge_detector_init(ook_edge_detector_t *edge_state, ook_adaptive_t
  * (initialized via their respective init functions).
  *
  * @param[in,out] edge_state Pointer to the initialized ook_edge_detector_t struct. Must not be NULL.
- * @param[in] sample The new input sample (post-LPF), int16_t.
+ * @param[in] sample The new input sample (post-LPF), int32_t.
  *
  * @return int32_t
  * - Positive value: Rising edge detected. Value is the count of samples previously below threshold (clamped to INT32_MAX).
  * - Negative value: Falling edge detected. Value is the negative count of samples previously above threshold (clamped to INT32_MIN).
  * - 0: No edge detected in this sample.
  */
-int32_t ook_edge_detector_update(ook_edge_detector_t *edge_state, int16_t sample);
+int32_t ook_edge_detector_update(ook_edge_detector_t *edge_state, int32_t sample);
 
 
 #ifdef __cplusplus
