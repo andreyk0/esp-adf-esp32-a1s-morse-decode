@@ -95,7 +95,7 @@ static int _modifier_process(audio_element_handle_t self, char *in_buffer, int i
 
   // Envelope
   for (int i = 0; i < num_samples_filter; i++) {
-    input[i] = -20000.0 + fmin(INT16_MAX, fabs(output[i]));
+    input[i] = fabs(output[i]);
   }
 
   // LPF over envelope
@@ -104,7 +104,7 @@ static int _modifier_process(audio_element_handle_t self, char *in_buffer, int i
 
   // Convert back to stereo output and run OOK decoder
   for (int i = 0; i < num_samples_filter; i++) {
-    int16_t s = (int16_t)output[i];
+    int16_t s = (int16_t)fmin(INT16_MAX - 1, fmax((output[i] + INT16_MIN), INT16_MIN + 1));
     samples[i * 2] = s;
 
     int32_t e = ook_edge_detector_update(&mod->ook_edge, s);
@@ -112,7 +112,7 @@ static int _modifier_process(audio_element_handle_t self, char *in_buffer, int i
     if (e != 0) {
       uint32_t range = (uint32_t)mod->ook_thres.current_max - mod->ook_thres.current_min;
       ESP_ERROR_CHECK(morse_sample(e, range));
-      samples[i * 2] = INT16_MIN/4; // to debug edge transitions
+      samples[i * 2] = INT16_MIN / 4; // to debug edge transitions
     }
   }
 
