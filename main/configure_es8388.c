@@ -57,7 +57,7 @@ void configure_es8388(void) {
               // 0x00)); // Select LINPUT1 for Left ADC, RINPUT1 for Right ADC
 
   ESP_ERROR_CHECK(es8388_write(ES8388_ADCCONTROL10,
-                               0x78)); // ALC gain
+                               0xF2)); // ALC gain
 
   ESP_ERROR_CHECK(es8388_write(ES8388_ADCCONTROL11,
                                0xF0)); // ALC target

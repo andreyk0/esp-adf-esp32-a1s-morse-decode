@@ -104,8 +104,8 @@ static int _modifier_process(audio_element_handle_t self, char *in_buffer, int i
 
   // Convert back to stereo output and run OOK decoder
   for (int i = 0; i < num_samples_filter; i++) {
-    // int16_t s = (int16_t)fmin(INT16_MAX - 1, fmax((output[i] + INT16_MIN), INT16_MIN + 1));
-    int16_t s = (int16_t)(output[i] + INT16_MIN + 1);
+    int16_t s = (int16_t)fmin(INT16_MAX - 1, fmax((output[i] + INT16_MIN), INT16_MIN + 1));
+    //int16_t s = (int16_t)(output[i] + INT16_MIN + 1);
     samples[i * 2] = s;
 
     int32_t e = ook_edge_detector_update(&mod->ook_edge, s);
