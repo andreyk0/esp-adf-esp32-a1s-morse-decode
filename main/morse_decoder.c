@@ -29,7 +29,7 @@ static void add_morse_code(MorseNode_t *root, const char *code, char character) 
     if (!root) return;
     MorseNode_t *curr = root;
     for (int i = 0; code[i] != '\0'; i++) {
-        if (code[i] == '*') { // Dit
+        if (code[i] == '.') { // Dit
             if (curr->dit == NULL) {
                 curr->dit = create_morse_node();
                 if (!curr->dit) return; // Allocation failed, stop
@@ -71,49 +71,49 @@ void morse_decoder_init(void) {
     }
 
     // Letters
-    add_morse_code(morse_tree_root, "*-", 'A');
-    add_morse_code(morse_tree_root, "-***", 'B');
-    add_morse_code(morse_tree_root, "-*-*", 'C');
-    add_morse_code(morse_tree_root, "-**", 'D');
-    add_morse_code(morse_tree_root, "*", 'E');
-    add_morse_code(morse_tree_root, "**-*", 'F');
-    add_morse_code(morse_tree_root, "--*", 'G');
-    add_morse_code(morse_tree_root, "****", 'H');
-    add_morse_code(morse_tree_root, "**", 'I');
-    add_morse_code(morse_tree_root, "*---", 'J');
-    add_morse_code(morse_tree_root, "-*-", 'K');
-    add_morse_code(morse_tree_root, "*-**", 'L');
+    add_morse_code(morse_tree_root, ".-", 'A');
+    add_morse_code(morse_tree_root, "-...", 'B');
+    add_morse_code(morse_tree_root, "-.-.", 'C');
+    add_morse_code(morse_tree_root, "-..", 'D');
+    add_morse_code(morse_tree_root, ".", 'E');
+    add_morse_code(morse_tree_root, "..-.", 'F');
+    add_morse_code(morse_tree_root, "--.", 'G');
+    add_morse_code(morse_tree_root, "....", 'H');
+    add_morse_code(morse_tree_root, "..", 'I');
+    add_morse_code(morse_tree_root, ".---", 'J');
+    add_morse_code(morse_tree_root, "-.-", 'K');
+    add_morse_code(morse_tree_root, ".-..", 'L');
     add_morse_code(morse_tree_root, "--", 'M');
-    add_morse_code(morse_tree_root, "-*", 'N');
+    add_morse_code(morse_tree_root, "-.", 'N');
     add_morse_code(morse_tree_root, "---", 'O');
-    add_morse_code(morse_tree_root, "*--*", 'P');
-    add_morse_code(morse_tree_root, "--*-", 'Q');
-    add_morse_code(morse_tree_root, "*-*", 'R');
-    add_morse_code(morse_tree_root, "***", 'S');
+    add_morse_code(morse_tree_root, ".--.", 'P');
+    add_morse_code(morse_tree_root, "--.-", 'Q');
+    add_morse_code(morse_tree_root, ".-.", 'R');
+    add_morse_code(morse_tree_root, "...", 'S');
     add_morse_code(morse_tree_root, "-", 'T');
-    add_morse_code(morse_tree_root, "**-", 'U');
-    add_morse_code(morse_tree_root, "***-", 'V');
-    add_morse_code(morse_tree_root, "*--", 'W');
-    add_morse_code(morse_tree_root, "-**-", 'X');
-    add_morse_code(morse_tree_root, "-*--", 'Y');
-    add_morse_code(morse_tree_root, "--**", 'Z');
+    add_morse_code(morse_tree_root, "..-", 'U');
+    add_morse_code(morse_tree_root, "...-", 'V');
+    add_morse_code(morse_tree_root, ".--", 'W');
+    add_morse_code(morse_tree_root, "-..-", 'X');
+    add_morse_code(morse_tree_root, "-.--", 'Y');
+    add_morse_code(morse_tree_root, "--..", 'Z');
 
     // Numbers
     add_morse_code(morse_tree_root, "-----", '0');
-    add_morse_code(morse_tree_root, "*----", '1');
-    add_morse_code(morse_tree_root, "**---", '2');
-    add_morse_code(morse_tree_root, "***--", '3');
-    add_morse_code(morse_tree_root, "****-", '4');
-    add_morse_code(morse_tree_root, "*****", '5');
-    add_morse_code(morse_tree_root, "-****", '6');
-    add_morse_code(morse_tree_root, "--***", '7');
-    add_morse_code(morse_tree_root, "---**", '8');
-    add_morse_code(morse_tree_root, "----*", '9');
+    add_morse_code(morse_tree_root, ".----", '1');
+    add_morse_code(morse_tree_root, "..---", '2');
+    add_morse_code(morse_tree_root, "...--", '3');
+    add_morse_code(morse_tree_root, "....-", '4');
+    add_morse_code(morse_tree_root, ".....", '5');
+    add_morse_code(morse_tree_root, "-....", '6');
+    add_morse_code(morse_tree_root, "--...", '7');
+    add_morse_code(morse_tree_root, "---..", '8');
+    add_morse_code(morse_tree_root, "----.", '9');
 
     // Common Punctuation
-    add_morse_code(morse_tree_root, "*-*-*-", '.');
-    add_morse_code(morse_tree_root, "--**--", ',');
-    add_morse_code(morse_tree_root, "**--**", '?');
+    add_morse_code(morse_tree_root, ".-.-.-", '.');
+    add_morse_code(morse_tree_root, "--..--", ',');
+    add_morse_code(morse_tree_root, "..--..", '?');
     // add_morse_code(morse_tree_root, "-...-", '='); // Or use for prosign BT
 
     current_node = morse_tree_root; // Initialize current state to the root
@@ -121,10 +121,10 @@ void morse_decoder_init(void) {
 }
 
 /**
- * @brief Decodes a single Morse signal input ('*', '-', or ' ').
+ * @brief Decodes a single Morse signal input ('.', '-', or ' ').
  *
  * Feed signals one by one to this function.
- * - If '*' (dit) or '-' (dah) is provided, the internal state is updated.
+ * - If '.' (dit) or '-' (dah) is provided, the internal state is updated.
  * The function returns -1 to indicate that the character is not yet complete.
  * If an invalid signal for the current sequence is received (e.g., a dit
  * where no dit path exists), the current sequence becomes invalid.
@@ -136,10 +136,10 @@ void morse_decoder_init(void) {
  * - For any other input character, it's treated as an error for the current
  * letter, the state is reset, and 0 is returned.
  *
- * @param signal_input The Morse signal: '*' for dit, '-' for dah, ' ' for end of letter.
+ * @param signal_input The Morse signal: '.' for dit, '-' for dah, ' ' for end of letter.
  * @return The decoded character if ' ' finalized a valid character,
  * 0 if ' ' finalized an invalid/incomplete character or an unknown signal was input,
- * -1 if '*' or '-' was processed (character incomplete).
+ * -1 if '.' or '-' was processed (character incomplete).
  */
 char decode_morse_signal(char signal_input) {
     if (morse_tree_root == NULL) {
@@ -164,7 +164,7 @@ char decode_morse_signal(char signal_input) {
     }
 
 
-    if (signal_input == '*') {
+    if (signal_input == '.') {
         if (current_node->dit != NULL) {
             current_node = current_node->dit;
         } else {

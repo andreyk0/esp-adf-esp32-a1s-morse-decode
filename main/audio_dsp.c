@@ -1,7 +1,7 @@
 #include "audio_dsp.h" // Include our header
 
 #include "audio_element.h"
-#include "audio_mem.h" // For memory allocation functions like audio_calloc
+#include "audio_mem.h"
 #include "esp_err.h"
 #include "esp_log.h"
 #include <dsp_common.h>
@@ -17,31 +17,37 @@
 #include <string.h>
 
 #include "morse.h"
-#include "ook_adaptive_threshold.h"
 #include "ook_edge_detector.h"
 
 static const char *TAG = "AUD";
 
 typedef struct audio_dsp {
   uint32_t cnt;
-  float coeffs_bpf[AUDIO_MODIFIER_FILTER_LEN];
-  float coeffs_lpf_envelope[AUDIO_MODIFIER_FILTER_LEN];
-  float wfb[AUDIO_MODIFIER_FILTER_LEN];
-  float wfe[AUDIO_MODIFIER_FILTER_LEN];
+  float coeffs_bpf[AUDIO_DSP_FILTER_LEN];
+  float coeffs_lpf_envelope[AUDIO_DSP_FILTER_LEN];
+  float wfb[AUDIO_DSP_FILTER_LEN];
+  float wfe[AUDIO_DSP_FILTER_LEN];
 
-  ook_adaptive_threshold_t ook_thres;
   ook_edge_detector_t ook_edge;
 } audio_dsp_t;
 
+static float smax = -MAXFLOAT / 2;
+static float smin = MAXFLOAT / 2;
+
 /**
- * @brief The core processing function for the audio modifier element.
- * Reads data from the input ringbuffer, divides each 16-bit sample by 2,
- * and writes the modified data to the output ringbuffer.
- * Handles input/output errors, timeouts, and stream termination (AEL_IO_DONE).
+ * Audio DSP.
+ * Reads stereo samples, passes one channel through for reference/debugging.
+ * Second channels is processed through
+ *   BPF(750Hz) =>
+ *   Envelope detector =>
+ *   LPF =>
+ *   Rescaling => Audio output (for debugging)
+ *             => OOK edge detector => Morse decoder
+ *
  */
-static int _modifier_process(audio_element_handle_t self, char *in_buffer, int in_len) {
-  __attribute__((aligned(16))) static float input[AUDIO_MODIFIER_N_SAMPLES];
-  __attribute__((aligned(16))) static float output[AUDIO_MODIFIER_N_SAMPLES];
+static int _dsp_process(audio_element_handle_t self, char *in_buffer, int in_len) {
+  __attribute__((aligned(16))) static float input[AUDIO_DSP_N_SAMPLES];
+  __attribute__((aligned(16))) static float output[AUDIO_DSP_N_SAMPLES];
 
   audio_dsp_t *mod = (audio_dsp_t *)audio_element_getdata(self);
 
@@ -82,7 +88,7 @@ static int _modifier_process(audio_element_handle_t self, char *in_buffer, int i
    * int)mod->cnt, */
   /*          num_samples, in_len); */
 
-  if (num_samples_filter > AUDIO_MODIFIER_N_SAMPLES) {
+  if (num_samples_filter > AUDIO_DSP_N_SAMPLES) {
     return ESP_FAIL;
   }
 
@@ -102,18 +108,37 @@ static int _modifier_process(audio_element_handle_t self, char *in_buffer, int i
   ESP_ERROR_CHECK(dsps_biquad_f32(input, output, num_samples_filter, mod->coeffs_lpf_envelope,
                                   mod->wfe)); // memcpy(output, input, num_samples_filter * sizeof(float));
 
+  // Shrinking min/max to account for signal fade in/out
+  smax = smax - 0.010 * fabs(smax);
+  smin = smin + 0.010 * fabs(smin);
+
+  for (int i = 0; i < num_samples_filter; i++) {
+    if (smin > output[i]) {
+      smin = output[i];
+    }
+    if (smax < output[i]) {
+      smax = output[i];
+    }
+  }
+
+  if (smin >= smax) {
+    smin = smax - 0.1;
+  }
+
+  float range = smax - smin;
+  float scale = range / (float)UINT32_MAX;
+
+  // ESP_LOGV(TAG, "Smin: %0.3f, Smax: %0.3f, Range: %0.3f, Scale: %0.7f", smin, smax, range, scale);
+
   // Convert back to stereo output and run OOK decoder
   for (int i = 0; i < num_samples_filter; i++) {
-    int16_t s = (int16_t)fmin(INT16_MAX - 1, fmax((output[i] + INT16_MIN), INT16_MIN + 1));
-    //int16_t s = (int16_t)(output[i] + INT16_MIN + 1);
-    samples[i * 2] = s;
+    uint32_t s = (uint32_t)fmin((float)(UINT32_MAX - UINT32_MAX / 128), fmax(0, (output[i] - smin) / scale));
+    samples[i * 2] = (s >> 16) + INT16_MIN;
 
     int32_t e = ook_edge_detector_update(&mod->ook_edge, s);
 
     if (e != 0) {
-      uint32_t range = (uint32_t)mod->ook_thres.current_max - mod->ook_thres.current_min;
       ESP_ERROR_CHECK(morse_sample(e, range));
-      samples[i * 2] = INT16_MIN / 4; // to debug edge transitions
     }
   }
 
@@ -145,8 +170,8 @@ static int _modifier_process(audio_element_handle_t self, char *in_buffer, int i
 /**
  * @brief Open function for the audio element (called when pipeline starts).
  */
-static esp_err_t _modifier_open(audio_element_handle_t self) {
-  ESP_LOGI(TAG, "Modifier element opened");
+static esp_err_t _dsp_open(audio_element_handle_t self) {
+  ESP_LOGI(TAG, "Dsp element opened");
   return ESP_OK;
 }
 
@@ -154,10 +179,10 @@ static esp_err_t _modifier_open(audio_element_handle_t self) {
  * @brief Close function for the audio element (called when pipeline
  * stops/terminates).
  */
-static esp_err_t _modifier_close(audio_element_handle_t self) {
-  ESP_LOGI(TAG, "Modifier element closed");
+static esp_err_t _dsp_close(audio_element_handle_t self) {
+  ESP_LOGI(TAG, "Dsp element closed");
   audio_dsp_t *mod = (audio_dsp_t *)audio_element_getdata(self);
-  ESP_LOGI(TAG, "Modifier CNT: %ul", (unsigned int)mod->cnt);
+  ESP_LOGI(TAG, "Dsp CNT: %ul", (unsigned int)mod->cnt);
 
   // Check status, might be useful for debugging why it closed
   if (audio_element_is_stopping(self)) {
@@ -172,20 +197,20 @@ static esp_err_t _modifier_close(audio_element_handle_t self) {
  * @brief Destroy function for the audio element (called when element is
  * deinitialized).
  */
-static esp_err_t _modifier_destroy(audio_element_handle_t self) {
-  ESP_LOGD(TAG, "Modifier element destroying");
+static esp_err_t _dsp_destroy(audio_element_handle_t self) {
+  ESP_LOGD(TAG, "Dsp element destroying");
 
   audio_dsp_t *mod = (audio_dsp_t *)audio_element_getdata(self);
 
   if (mod) {
     audio_free(mod);
   }
-  ESP_LOGD(TAG, "Modifier element destroyed");
+  ESP_LOGD(TAG, "Dsp element destroyed");
   return ESP_OK;
 }
 
 /**
- * @brief Initialization function for the audio modifier element.
+ * @brief Initialization function for the audio dsp element.
  */
 audio_element_handle_t audio_dsp_init(audio_dsp_cfg_t *config) {
   // Allocate memory for the element's specific data
@@ -195,26 +220,25 @@ audio_element_handle_t audio_dsp_init(audio_dsp_cfg_t *config) {
     return NULL;
   });
 
-  ook_adaptive_threshold_init(&mod->ook_thres, 3, 10000);
-  ook_edge_detector_init(&mod->ook_edge, &mod->ook_thres, 0);
+  ook_edge_detector_init(&mod->ook_edge);
 
   // Init filters
   // 44100 750Hz
-  ESP_ERROR_CHECK(dsps_biquad_gen_bpf_f32(mod->coeffs_bpf, 0.017, 12.0f));
-  ESP_ERROR_CHECK(dsps_biquad_gen_lpf_f32(mod->coeffs_lpf_envelope, 0.001, 0.707f));
+  ESP_ERROR_CHECK(dsps_biquad_gen_bpf_f32(mod->coeffs_bpf, 0.017, 20.0f));
+  ESP_ERROR_CHECK(dsps_biquad_gen_lpf_f32(mod->coeffs_lpf_envelope, 0.00050, 0.707f));
 
   // Basic audio element configuration
   audio_element_cfg_t cfg = DEFAULT_AUDIO_ELEMENT_CONFIG();
-  cfg.open = _modifier_open;
-  cfg.close = _modifier_close;
-  cfg.process = _modifier_process;
-  cfg.destroy = _modifier_destroy;
-  cfg.tag = "modifier"; // Element tag for logging
+  cfg.open = _dsp_open;
+  cfg.close = _dsp_close;
+  cfg.process = _dsp_process;
+  cfg.destroy = _dsp_destroy;
+  cfg.tag = "dsp"; // Element tag for logging
   cfg.task_stack = config->task_stack;
   cfg.task_prio = config->task_prio;
   cfg.task_core = config->task_core;
   cfg.out_rb_size = config->out_rb_size;
-  cfg.buffer_len = AUDIO_MODIFIER_BUF_SIZE;
+  cfg.buffer_len = AUDIO_DSP_BUF_SIZE;
 
   // Initialize the base audio element
   audio_element_handle_t el = audio_element_init(&cfg);
@@ -230,6 +254,6 @@ audio_element_handle_t audio_dsp_init(audio_dsp_cfg_t *config) {
   audio_element_info_t info = {0};
   audio_element_setinfo(el, &info);
 
-  ESP_LOGD(TAG, "Audio modifier element initialized successfully");
+  ESP_LOGD(TAG, "Audio DSP element initialized successfully");
   return el;
 }

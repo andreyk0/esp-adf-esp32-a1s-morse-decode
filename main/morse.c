@@ -1,12 +1,14 @@
 #include "morse.h"
 
 #include "char_buffer.h"
+#include "driver/gpio.h"
 #include "freertos/FreeRTOS.h"
 #include "freertos/queue.h"
 #include "freertos/task.h"
 #include <esp_check.h> // For ESP_RETURN_ON_FALSE checks
 #include <esp_err.h>
 #include <esp_log.h>
+#include <inttypes.h>
 #include <math.h>
 #include <stdint.h>
 #include <stdio.h>
@@ -15,6 +17,7 @@
 
 #include "char_buffer.h"
 #include "decaying_histogram.h"
+#include "leds.h"
 #include "morse_decoder.h"
 
 static const char *TAG = "MORSE";
@@ -33,7 +36,12 @@ static char_buffer_t *dit_dah_buf = NULL;
 static char_buffer_t *text_buf = NULL;
 
 // current dit threshold
-int32_t dit_th = 0;
+static int32_t dit_th = 0;
+
+// active low/high range, just for debugging
+static float range = 0.0f;
+
+#define TSECS(samples) ((float)samples / 44100.0)
 
 esp_err_t morse_init() {
   morse_ook_queue = xQueueCreate(16, sizeof(uint32_t));
@@ -48,7 +56,7 @@ esp_err_t morse_init() {
     return ESP_ERR_INVALID_STATE;
   }
 
-  ESP_ERROR_CHECK(decaying_histogram_init(&dit_dah_len_his, PULSE_WIDTH_MIN, PULSE_WIDTH_MAX, 256, 2, 0.8f));
+  ESP_ERROR_CHECK(decaying_histogram_init(&dit_dah_len_his, PULSE_WIDTH_MIN, PULSE_WIDTH_MAX, 256, 0.8f));
 
   dit_dah_buf = char_buffer_init(64);
   text_buf = char_buffer_init(32);
@@ -71,13 +79,13 @@ static void handle_on_to_off_transition(int32_t abse) {
   dit_th = decaying_histogram_get_threshold(&dit_dah_len_his);
 
   if (abse >= dit_th) {
-    ESP_LOGI(TAG, "-");
+    ESP_LOGI(TAG, "- %0.3f / %0.3f", TSECS(abse), TSECS(dit_th));
     decode_morse_signal('-');
     char_buffer_append_char(dit_dah_buf, '-');
   } else {
-    ESP_LOGI(TAG, "*");
-    decode_morse_signal('*');
-    char_buffer_append_char(dit_dah_buf, '*');
+    ESP_LOGI(TAG, ". %0.3f / %0.3f", TSECS(abse), TSECS(dit_th));
+    decode_morse_signal('.');
+    char_buffer_append_char(dit_dah_buf, '.');
   }
 }
 
@@ -92,18 +100,27 @@ static void handle_pause() {
     char_buffer_append_char(dit_dah_buf, ' ');
     ESP_LOGI(TAG, "%c", c);
   } else {
+
     decaying_histogram_dump(&dit_dah_len_his);
-    ESP_LOGI(TAG, "? r: dit: %d", (int)dit_th);
+    ESP_LOGI(TAG, "? %0.3f", TSECS(dit_th));
   }
 }
 
 static void handle_off_to_on_transition(int32_t abse) {
-  if (abse >= 2 * dit_th) {
+  if (abse >= dit_th) { // dit + (dah - dit)/2
     handle_pause();
 
     if (abse > 3 * dit_th) {
       log_buffers();
+      ESP_LOGI(TAG, "~~~ %0.3f", TSECS(abse));
+      gpio_set_level(LED_PIN_1, 0);
+    } else {
+      ESP_LOGI(TAG, "~~ %0.3f", TSECS(abse));
+      gpio_set_level(LED_PIN_1, 0);
     }
+  } else {
+    ESP_LOGI(TAG, "~ %0.3f", TSECS(abse));
+    gpio_set_level(LED_PIN_1, 1);
   }
 }
 
@@ -121,8 +138,10 @@ void morse_sample_handler_task(void *pvParameters) {
 
       if (e < 0) {
         handle_on_to_off_transition(abse);
+        gpio_set_level(LED_PIN_2, 0);
       } else {
         handle_off_to_on_transition(abse);
+        gpio_set_level(LED_PIN_2, 1);
       }
     } else {
       if (should_handle_last_pause) {
@@ -135,7 +154,8 @@ void morse_sample_handler_task(void *pvParameters) {
   }
 }
 
-esp_err_t morse_sample(int32_t e, uint32_t r) {
+esp_err_t morse_sample(int32_t e, float r) {
+  range = r;
   xQueueSend(morse_ook_queue, (void *)&e, (TickType_t)0);
   return ESP_OK;
 }

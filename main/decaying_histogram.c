@@ -11,8 +11,11 @@
 
 static const char *TAG = "HIST";
 
+// dah is supposed to be ~ 3xdit in morse, this creates a narrower 2x peak search exclusion zone
+static const int EXCLUSION_ZONE_MULT = 2;
+
 esp_err_t decaying_histogram_init(decaying_histogram_t *hist, int32_t min_val, int32_t max_val, uint32_t num_bins,
-                                  uint32_t num_bins_signal_spread, float decay_exponent) {
+                                  float decay_exponent) {
   if (hist == NULL || num_bins == 0 || decay_exponent <= 0.0f || decay_exponent >= 1.0f || min_val >= max_val) {
     return ESP_ERR_INVALID_ARG;
   }
@@ -25,7 +28,6 @@ esp_err_t decaying_histogram_init(decaying_histogram_t *hist, int32_t min_val, i
   hist->min_val = min_val;
   hist->max_val = max_val;
   hist->num_bins = num_bins;
-  hist->num_bins_signal_spread = num_bins_signal_spread;
   hist->decay_exponent = decay_exponent;
   hist->bin_width = (float)(max_val - min_val) / num_bins;
 
@@ -119,9 +121,9 @@ esp_err_t decaying_histogram_get_min_max_bins(const decaying_histogram_t *hist, 
   }
 
   int32_t max2_idx = 0;
-  int32_t excluded_lower_idx = max1_idx - hist->num_bins_signal_spread;
-  int32_t excluded_upper_idx = max1_idx + hist->num_bins_signal_spread;
   count = -FLT_MAX;
+  int32_t excluded_lower_idx = max1_idx - (max1_idx / EXCLUSION_ZONE_MULT);
+  int32_t excluded_upper_idx = max1_idx * EXCLUSION_ZONE_MULT;
 
   for (int i = 0; i < hist->num_bins; i++) {
     if (hist->bins[i] > count && (i < excluded_lower_idx || i > excluded_upper_idx)) {

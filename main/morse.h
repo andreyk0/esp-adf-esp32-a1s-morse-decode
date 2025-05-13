@@ -16,6 +16,6 @@ void morse_sample_handler_task(void *pvParameters);
  *  @param e edge, sign represents transition +/- for positive/negative, absolute value is the number of samples (pulse duration in units of time/sample)
  *  @param range OOK threshold effective range, the bigger the better, for debugging / display
  */
-esp_err_t morse_sample(int32_t e, uint32_t range);
+esp_err_t morse_sample(int32_t e, float range);
 
 #endif // MORSE_H_

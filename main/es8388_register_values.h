@@ -1,0 +1,424 @@
+#ifndef ES8388_REGISTER_VALUES_H_
+#define ES8388_REGISTER_VALUES_H_
+
+// ES8388 Register Definitions and Default Values
+// Based on Everest Semiconductor ES8388 Datasheet, Revision 12.0, November 2023
+
+// Note: Default values are represented in binary and enclosed in parentheses.
+// Bit descriptions in comments reflect the default state of each bit/field.
+// Register addresses are as per the datasheet's RAM map.
+
+// -----------------------------------------------------------------------------
+// Section 6.1: Chip Control and Power Management (Registers 0x00 - 0x08)
+// -----------------------------------------------------------------------------
+
+// Register 0x00: Chip Control 1
+// Default: 0000 0110
+// Bit 7: SCPReset (0)    - Normal operation
+// Bit 6: LRCM (0)        - ALRCK disabled when both ADC disabled; DLRCK disabled when both DAC disabled
+// Bit 5: DACMCLK (0)     - If SameFs=1, ADCMCLK is the chip master clock source
+// Bit 4: SameFs (0)      - ADC Fs differs from DAC Fs
+// Bit 3: SeqEn (0)       - Internal power up/down sequence disable
+// Bit 2: EnRef (1)       - Enable reference
+// Bits 1:0: VMIDSEL (10) - 500 kOhm Vmid divider enabled
+#define ES8388_REG00_CHIP_CONTROL1 (0b00000110)
+
+// Register 0x01: Chip Control 2
+// Default: 0101 1100
+// Bit 7: Reserved (0)    - Default state from binary 01011100
+// Bit 6: Reserved (1)    - Default state from binary 01011100
+// Bit 5: LPVcmMod (0)    - Normal VCM mode
+// Bit 4: LPVrefBuf (1)   - Low power VREF buffer
+// Bit 3: PdnAna (1)      - Entire analog power down
+// Bit 2: Pdnlbiasgen (1) - IBiasgen power down
+// Bit 1: VrefLo (0)      - Normal VREF (not low power)
+// Bit 0: PdnVrefbuf (0)  - VREF buffer normal (not power down)
+#define ES8388_REG01_CHIP_CONTROL2 (0b00000000)
+
+// Register 0x02: Chip Power Management
+// Default: 1100 0011
+// Bit 7: adc_DigPDN (1)  - Resets ADC DEM, filter, serial data port
+// Bit 6: dac_DigPDN (1)  - Resets DAC DSM, DEM, filter, serial data port
+// Bit 5: adc_stm_rst (0) - Normal ADC state machine operation
+// Bit 4: dac_stm_rst (0) - Normal DAC state machine operation
+// Bit 3: ADCDLL_PDN (0)  - ADC_DLL normal operation (not power down)
+// Bit 2: DACDLL_PDN (0)  - DAC_DLL normal operation (not power down)
+// Bit 1: adcVref_PDN (1) - ADC analog reference power down
+// Bit 0: dacVref_PDN (1) - DAC analog reference power down
+#define ES8388_REG02_CHIP_POWER_MGMT (0b00000000)
+
+// Register 0x03: ADC Power Management
+// Default: 1111 1100
+// Bit 7: PdnAINL (1)       - Left analog input power down
+// Bit 6: PdnAINR (1)       - Right analog input power down
+// Bit 5: PdnADCL (1)       - Left ADC power down
+// Bit 4: PdnADCR (1)       - Right ADC power down
+// Bit 3: PdnMICB (1)       - Microphone bias power down (high impedance output)
+// Bit 2: PdnADCBiasgen (1) - ADC bias generator power down
+// Bit 1: flashLP (0)       - Flash ADC normal power
+// Bit 0: int1LP (0)        - INT1 normal power
+#define ES8388_REG03_ADC_POWER_MGMT (0b00001000)
+
+// Register 0x04: DAC Power Management
+// Default: 1100 0000
+// Bit 7: PdnDACL (1)    - Left DAC power down
+// Bit 6: PdnDACR (1)    - Right DAC power down
+// Bit 5: LOUT1 (0)      - LOUT1 disabled
+// Bit 4: ROUT1 (0)      - ROUT1 disabled
+// Bit 3: LOUT2 (0)      - LOUT2 disabled
+// Bit 2: ROUT2 (0)      - ROUT2 disabled
+// Bits 1:0: Reserved (00) - Datasheet implies these bits are unused in detailed view
+#define ES8388_REG04_DAC_POWER_MGMT (0b00001111)
+
+// Register 0x05: Chip Low Power 1
+// Default: 0000 0000
+// Bit 7: LPDACL (0)     - Left DAC normal power
+// Bit 6: LPDACR (0)     - Right DAC normal power
+// Bit 5: LPLOUT1 (0)    - LOUT1 normal power
+// Bit 4: Reserved (0)    - Datasheet indicates this bit is unused
+// Bit 3: LPLOUT2 (0)    - LOUT2 normal power
+// Bits 2:0: Reserved (000) - Datasheet indicates these bits are unused
+#define ES8388_REG05_CHIP_LOW_POWER1 (0b00000000)
+
+// Register 0x06: Chip Low Power 2
+// Default: 0000 0000
+// Bit 7: LPPGA (0)      - PGA normal power
+// Bit 6: LPLMIX (0)     - Left Mixer normal power
+// Bits 5:2: Reserved (0000) - Datasheet indicates these bits are unused
+// Bit 1: LPADCvrp (0)   - ADC VRP normal power
+// Bit 0: LPDACvrp (0)   - DAC VRP normal power
+#define ES8388_REG06_CHIP_LOW_POWER2 (0b00000000)
+
+// Register 0x07: Analog Voltage Management
+// Default: 0111 1100
+// Bit 7: Reserved (0)      - Not part of VSEL, default is 0
+// Bits 6:0: VSEL (1111100) - Normal analog voltage internal setting
+#define ES8388_REG07_ANALOG_VOLT_MGMT (0b01111100)
+
+// Register 0x08: Master Mode Control
+// Default: 1000 0000
+// Bit 7: MSC (1)            - Master serial port mode
+// Bit 6: MCLKDIV2 (0)       - MCLK not divided by 2
+// Bit 5: BCLK_INV (0)       - BCLK normal polarity
+// Bits 4:0: BCLKDIV (00000) - Master mode BCLK generated automatically based on the clock table
+#define ES8388_REG08_MASTER_MODE_CTRL (0b00000000)
+
+// -----------------------------------------------------------------------------
+// Section 6.2: ADC Control (Registers 0x09 - 0x16)
+// -----------------------------------------------------------------------------
+
+// Register 0x09 (Decimal 9): ADC Control 1, Mic Amp Gain
+// Default: 0000 0000
+// Bits 7:4: MicAmpL (0000) - Left channel PGA gain 0 dB
+// Bits 3:0: MicAmpR (0000) - Right channel PGA gain 0 dB
+#define ES8388_REG09_ADC_CTRL1_MICAMP (0b00000000)
+
+// Register 0x0A (Decimal 10): ADC Control 2, Input Select
+// Default: 0000 0000
+// Bits 7:6: LINSEL (00) - Left channel input LINPUT1
+// Bits 5:4: RINSEL (00) - Right channel input RINPUT1
+// Bit 3: DSSEL (0)      - Use one DS Reg11[7]
+// Bit 2: DSR (0)        - Differential input LINPUT1-RINPUT1
+// Bits 1:0: Reserved (00) - Not explicitly detailed, default is 00
+#define ES8388_REG0A_ADC_CTRL2_INSEL (0b01010000)
+
+// Register 0x0B (Decimal 11): ADC Control 3, Differential Select, Mono Mix, Tri-state
+// Default: 0000 0010
+// Bit 7: DS (0)           - Differential input select LINPUT1-RINPUT1
+// Bits 6:5: Reserved (00)  - Default state from binary 00000010
+// Bits 4:3: MONOMIX (00)  - Stereo ADC
+// Bit 2: TRI (0)          - ASDOUT is ADC normal output
+// Bits 1:0: Reserved (10)  - Note: PDF default 00000010 implies B1=1, B0=0.
+#define ES8388_REG0B_ADC_CTRL3_DIFFSEL (0b00000010)
+
+// Register 0x0C (Decimal 12): ADC Control 4, Data Select, Polarity, Word Length, Format
+// Default: 0000 0000
+// Bits 7:6: DATSEL (00)     - Left data = Left ADC, Right data = Right ADC
+// Bit 5: ADCLRP (0)       - Normal polarity (I2S/LJ/RJ modes); MSB on 2nd BCLK edge after ALRCK rising (DSP/PCM mode)
+// Bits 4:2: ADCWL (000)     - 24-bit serial audio data word length
+// Bits 1:0: ADCFORMAT (00)  - I2S serial audio data format
+#define ES8388_REG0C_ADC_CTRL4_FORMAT (0b00001100)
+
+// Register 0x0D (Decimal 13): ADC Control 5, Fs Mode, Fs Ratio
+// Default: 0000 0110
+// Bits 7:6: Reserved (00)  - Default state from binary 00000110
+// Bit 5: ADCFsMode (0)      - Single speed mode
+// Bits 4:0: ADCFsRatio (00110) - Master mode ADC MCLK to sampling frequency ratio 768
+#define ES8388_REG0D_ADC_CTRL5_FSRATIO (0b00000110)
+
+// Register 0x0E (Decimal 14): ADC Control 6, Invert, HPF Enable
+// Default: 0011 0000
+// Bit 7: ADC_invL (0)   - Left channel normal polarity (not inverted)
+// Bit 6: ADC_invR (0)   - Right channel normal polarity (not inverted)
+// Bit 5: ADC_HPF_L (1)  - Enable ADC left channel high pass filter
+// Bit 4: ADC_HPF_R (1)  - Enable ADC right channel high pass filter
+// Bits 3:0: Reserved (0000) - Default state from binary 00110000
+#define ES8388_REG0E_ADC_CTRL6_HPFINV (0b00110000)
+
+// Register 0x0F (Decimal 15): ADC Control 7, Ramp Rate, Soft Ramp, L/R Sync, Mute
+// Default: 0010 0000
+// Bits 7:6: ADCRampRate (00) - 0.5 dB per 4 LRCK digital volume control ramp rate
+// Bit 5: ADCSoftRamp (1)   - Enabled digital volume control soft ramp
+// Bit 4: Reserved (0)      - Default state from binary 00100000
+// Bit 3: ADCLER (0)        - Normal, independent L/R channel gain control (not set by left gain control register)
+// Bit 2: ADCMute (0)       - Normal, ADC digital output not muted
+// Bits 1:0: Reserved (00)   - Default state from binary 00100000
+#define ES8388_REG0F_ADC_CTRL7_RAMPMUTE (0b00100000)
+
+// Register 0x10 (Decimal 16): ADC Control 8, Left ADC Digital Volume
+// Default: 1100 0000
+// Bits 7:0: LADCVOL (11000000) - Left ADC digital volume -96 dB
+#define ES8388_REG10_ADC_CTRL8_LVOL (0b00000000)
+
+// Register 0x11 (Decimal 17): ADC Control 9, Right ADC Digital Volume
+// Default: 1100 0000
+// Bits 7:0: RADCVOL (11000000) - Right ADC digital volume -96 dB
+#define ES8388_REG11_ADC_CTRL9_RVOL (0b00000000)
+
+// Register 0x12 (Decimal 18): ADC Control 10, ALC Select, Max/Min Gain
+// Default: 0011 1000
+// Bits 7:6: ALCSEL (00)    - ALC off
+// Bits 5:3: MAXGAIN (111) - ALC Max PGA gain +35.5 dB (derived from default 00111000)
+// Bits 2:0: MINGAIN (000) - ALC Min PGA gain -12 dB (derived from default 00111000)
+#define ES8388_REG12_ADC_CTRL10_ALCGAIN (0b11110010)
+
+// Register 0x13 (Decimal 19): ADC Control 11, ALC Target Level, Hold Time
+// Default: 1011 0000
+// Bits 7:4: ALCLVL (1011) - ALC target -1.5 dB (value 1011 falls into range 1010-1111 for -1.5dB)
+// Bits 3:0: ALCHLD (0000) - ALC hold time 0ms
+#define ES8388_REG13_ADC_CTRL11_ALCLVLHLD (0b11110000)
+
+// Register 0x14 (Decimal 20): ADC Control 12, ALC Decay Time, Attack Time
+// Default: 0011 0010
+// Bits 7:4: ALCDCY (0011) - ALC decay (gain ramp up) time: 3.28 ms (ALC mode) / 726 us (Limiter mode)
+// Bits 3:0: ALCATK (0010) - ALC attack (gain ramp down) time: 416 us (ALC mode) / 90.8 us (Limiter mode)
+#define ES8388_REG14_ADC_CTRL12_ALCDCYATK (0b00110010)
+
+// Register 0x15 (Decimal 21): ADC Control 13, ALC Mode, Zero Cross, Window Size
+// Default: 0000 0110
+// Bit 7: ALCMODE (0)       - ALC mode (Normal Operation)
+// Bit 6: ALCZC (0)         - ALC zero cross detection disable (recommended)
+// Bit 5: TIME_OUT (0)      - Zero Cross time out disable
+// Bits 4:0: WIN_SIZE (00110) - Peak detector window size 96 samples
+#define ES8388_REG15_ADC_CTRL13_ALCZCWIN (0b00000110)
+
+// Register 0x16 (Decimal 22): ADC Control 14, Noise Gate Settings
+// Default: 0000 0000
+// Bits 7:3: NGTH (00000) - Noise gate threshold -76.5 dBFS
+// Bits 2:1: NGG (00)    - Noise gate type: PGA gain held constant
+// Bit 0: NGAT (0)       - Noise gate function disable
+#define ES8388_REG16_ADC_CTRL14_NG (0b00000000)
+
+// -----------------------------------------------------------------------------
+// Section 6.3: DAC Control (Registers 0x17 - 0x34)
+// -----------------------------------------------------------------------------
+
+// Register 0x17 (Decimal 23): DAC Control 1, Data Swap, Polarity, Word Length, Format
+// Default: 0000 0000
+// Bit 7: DACLRSWAP (0)    - Normal, no L/R channel data swap
+// Bit 6: DACLRP (0)       - Normal polarity (I2S/LJ/RJ modes); MSB on 2nd BCLK edge after ALRCK rising (DSP/PCM mode)
+// Bits 5:3: DACWL (000)     - 24-bit serial audio data word length
+// Bits 2:1: DACFORMAT (00)  - I2S serial audio data format
+// Bit 0: Reserved (0)      - Default state from binary 00000000
+#define ES8388_REG17_DAC_CTRL1_FORMAT (0b00011000)
+
+// Register 0x18 (Decimal 24): DAC Control 2, Fs Mode, Fs Ratio
+// Default: 0000 0110
+// Bits 7:6: Reserved (00)    - Default state from binary 00000110
+// Bit 5: DACFsMode (0)      - Single speed mode
+// Bits 4:0: DACFsRatio (00110) - Master mode DAC MCLK to sampling frequency ratio 768
+#define ES8388_REG18_DAC_CTRL2_FSRATIO (0b00000010)
+
+// Register 0x19 (Decimal 25): DAC Control 3, Ramp Rate, Soft Ramp, L/R Sync, Mute
+// Default: 0010 0010
+// Bits 7:6: DACRampRate (00) - 0.5 dB per 4 LRCK digital volume control ramp rate
+// Bit 5: DACSoftRamp (1)   - Enabled digital volume control soft ramp
+// Bit 4: Reserved (0)      - Default state from binary 00100010
+// Bit 3: DACLER (0)        - Normal, independent L/R channel gain control
+// Bit 2: DACMute (0)       - Normal, analog outputs not muted for both channels
+// Bit 1: Reserved (1)      - Note: PDF default 00100010 implies this bit is 1.
+// Bit 0: Reserved (0)      - Default state from binary 00100010
+#define ES8388_REG19_DAC_CTRL3_RAMPMUTE (0b00100010)
+
+// Register 0x1A (Decimal 26): DAC Control 4, Left DAC Digital Volume
+// Default: 1100 0000
+// Bits 7:0: LDACVOL (11000000) - Left DAC digital volume -96 dB
+#define ES8388_REG1A_DAC_CTRL4_LVOL (0b00000000)
+
+// Register 0x1B (Decimal 27): DAC Control 5, Right DAC Digital Volume
+// Default: 1100 0000
+// Bits 7:0: RDACVOL (11000000) - Right DAC digital volume -96 dB
+#define ES8388_REG1B_DAC_CTRL5_RVOL (0b00000000)
+
+// Register 0x1C (Decimal 28): DAC Control 6, De-emphasis, Invert, ClickFree
+// Default: 0000 1000
+// Bits 7:6: Deemphasis Mode (00) - De-emphasis frequency disabled
+// Bit 5: DAC_invL (0)     - Normal DAC left channel analog output (no phase inversion)
+// Bit 4: DAC_invR (0)     - Normal DAC right channel analog output (no phase inversion)
+// Bit 3: ClickFree (1)    - Enable digital click free power up and down
+// Bits 2:0: Reserved (000) - Default state from binary 00001000
+#define ES8388_REG1C_DAC_CTRL6_DEEMPHINV (0b00001000)
+
+// Register 0x1D (Decimal 29): DAC Control 7, Zero Output, Mono, Stereo Enhancement
+// Default: 0000 0000
+// Bit 7: ZeroL (0)        - Normal, Left DAC output not all zero
+// Bit 6: ZeroR (0)        - Normal, Right DAC output not all zero
+// Bit 5: Mono (0)         - Stereo DAC operation
+// Bits 4:2: SE (000)      - Stereo Enhancement strength 0
+// Bits 1:0: Vpp_scale (00) - Vpp set at 3.5V (0.7 modulation index)
+#define ES8388_REG1D_DAC_CTRL7_ZEROSE (0b00000000)
+
+// Register 0x1E (Decimal 30): DAC Control 8, Shelving Filter Coefficient a[29:24]
+// Default: 0001 1111
+// Bits 7:6: Reserved (00)              - Default state from binary 00011111
+// Bits 5:0: Shelving_a[29:24] (011111) - Part of 30-bit 'a' coefficient for shelving filter
+#define ES8388_REG1E_DAC_CTRL8_SHELVINGA29_24 (0b00011111)
+
+// Register 0x1F (Decimal 31): DAC Control 9, Shelving Filter Coefficient a[23:16]
+// Default: 1111 0111
+// Bits 7:0: Shelving_a[23:16] (11110111) - Part of 30-bit 'a' coefficient for shelving filter
+#define ES8388_REG1F_DAC_CTRL9_SHELVINGA23_16 (0b11110111)
+
+// Register 0x20 (Decimal 32): DAC Control 10, Shelving Filter Coefficient a[15:8]
+// Default: 1111 1101
+// Bits 7:0: Shelving_a[15:8] (11111101) - Part of 30-bit 'a' coefficient for shelving filter
+#define ES8388_REG20_DAC_CTRL10_SHELVINGA15_8 (0b11111101)
+
+// Register 0x21 (Decimal 33): DAC Control 11, Shelving Filter Coefficient a[7:0]
+// Default: 1111 1111
+// Bits 7:0: Shelving_a[7:0] (11111111) - Part of 30-bit 'a' coefficient for shelving filter
+#define ES8388_REG21_DAC_CTRL11_SHELVINGA7_0 (0b11111111)
+
+// Register 0x22 (Decimal 34): DAC Control 12, Shelving Filter Coefficient b[29:24]
+// Default: 0001 1111
+// Bits 7:6: Reserved (00)              - Default state from binary 00011111
+// Bits 5:0: Shelving_b[29:24] (011111) - Part of 30-bit 'b' coefficient for shelving filter
+#define ES8388_REG22_DAC_CTRL12_SHELVINGB29_24 (0b00011111)
+
+// Register 0x23 (Decimal 35): DAC Control 13, Shelving Filter Coefficient b[23:16]
+// Default: 1111 0111
+// Bits 7:0: Shelving_b[23:16] (11110111) - Part of 30-bit 'b' coefficient for shelving filter
+#define ES8388_REG23_DAC_CTRL13_SHELVINGB23_16 (0b11110111)
+
+// Register 0x24 (Decimal 36): DAC Control 14, Shelving Filter Coefficient b[15:8]
+// Default: 1111 1101
+// Bits 7:0: Shelving_b[15:8] (11111101) - Part of 30-bit 'b' coefficient for shelving filter
+#define ES8388_REG24_DAC_CTRL14_SHELVINGB15_8 (0b11111101)
+
+// Register 0x25 (Decimal 37): DAC Control 15, Shelving Filter Coefficient b[7:0]
+// Default: 1111 1111
+// Bits 7:0: Shelving_b[7:0] (11111111) - Part of 30-bit 'b' coefficient for shelving filter
+#define ES8388_REG25_DAC_CTRL15_SHELVINGB7_0 (0b11111111)
+
+// Register 0x26 (Decimal 38): DAC Control 16, Mixer Input Select
+// Default: 0000 0000
+// Bits 7:6: Reserved (00)    - Default state from binary 00000000
+// Bits 5:3: LMIXSEL (000)   - Left input for output mix: LIN1
+// Bits 2:0: RMIXSEL (000)   - Right input for output mix: RIN1 (Datasheet: RMIXSEL is Bits 2:0)
+#define ES8388_REG26_DAC_CTRL16_MIXSEL (0b00100100)
+
+// Register 0x27 (Decimal 39): DAC Control 17, Left DAC/LIN to Left Mixer, Volume
+// Default: 0011 1000
+// Bit 7: LD2LO (0)        - Left DAC to left mixer disable
+// Bit 6: LI2LO (0)        - LIN signal to left mixer disable
+// Bits 5:3: LI2LOVOL (111) - LIN signal to left mixer gain -15 dB
+// Bits 2:0: Reserved (000) - Default state from binary 00111000
+#define ES8388_REG27_DAC_CTRL17_LD2LOVOL (0b10111000)
+
+// Register 0x28 (Decimal 40): DAC Control 18
+// Default: 0010 1000
+// Bits 7:0 - No detailed bit field description on its datasheet page (p.26). Default 00101000.
+#define ES8388_REG28_DAC_CTRL18 (0b00101000)
+
+// Register 0x29 (Decimal 41): DAC Control 19
+// Default: 0010 1000
+// Bits 7:0 - No detailed bit field description on its datasheet page (p.26). Default 00101000.
+#define ES8388_REG29_DAC_CTRL19 (0b00101000)
+
+// Register 0x2A (Decimal 42): DAC Control 20, Right DAC/RIN to Right Mixer, Volume
+// Default: 0011 1000
+// Bit 7: RD2RO (0)        - Right DAC to right mixer disable
+// Bit 6: RI2RO (0)        - RIN signal to right mixer disable
+// Bits 5:3: RI2ROVOL (111) - RIN signal to right mixer gain -15 dB
+// Bits 2:0: Reserved (000) - Default state from binary 00111000
+#define ES8388_REG2A_DAC_CTRL20_RD2ROVOL (0b10111000)
+
+// Register 0x2B (Decimal 43): DAC Control 21, LRCK Settings, Offset, MCLK, DLL Power
+// Default: 0000 0000
+// Bit 7: slrck (0)       - DACLRC and ADCLRC separate
+// Bit 6: lrck_sel (0)    - Master mode, if slrck=1: 0 means use DAC LRCK
+// Bit 5: offset_dis (0)  - Disable offset
+// Bit 4: mclk_dis (0)    - Normal MCLK input from PAD (not disabled)
+// Bit 3: adc_dll_pwd (0) - ADC DLL normal power (not power down)
+// Bit 2: dac_dll_pwd (0) - DAC DLL normal power (not power down)
+// Bits 1:0: Reserved (00) - Default state from binary 00000000
+#define ES8388_REG2B_DAC_CTRL21_LRCKOFFSET (0b10000000)
+
+// Register 0x2C (Decimal 44): DAC Control 22, DC Offset Value
+// Default: 0000 0000
+// Bits 7:0: offset (00000000) - DC offset value
+#define ES8388_REG2C_DAC_CTRL22_OFFSETVAL (0b00000000)
+
+// Register 0x2D (Decimal 45): DAC Control 23, VREF to Analog Output Resistance
+// Default: 0000 0000
+// Bits 7:5: Reserved (000) - Default state from binary 00000000
+// Bit 4: VROI (0)         - 1.5k VREF to analog output resistance
+// Bits 3:0: Reserved (0000) - Default state from binary 00000000
+#define ES8388_REG2D_DAC_CTRL23_VROI (0b00000000)
+
+// Register 0x2E (Decimal 46): DAC Control 24, LOUT1 Volume
+// Default: 0000 0000
+// Bits 7:6: Reserved (00)      - Default state from binary 00000000
+// Bits 5:0: LOUT1VOL (000000) - LOUT1 volume -45dB
+#define ES8388_REG2E_DAC_CTRL24_LOUT1VOL (0b00011110)
+
+// Register 0x2F (Decimal 47): DAC Control 25, ROUT1 Volume
+// Default: 0000 0000
+// Bits 7:6: Reserved (00)      - Default state from binary 00000000
+// Bits 5:0: ROUT1VOL (000000) - ROUT1 volume -45dB
+#define ES8388_REG2F_DAC_CTRL25_ROUT1VOL (0b00011110)
+
+// Register 0x30 (Decimal 48): DAC Control 26, LOUT2 Volume
+// Default: 0000 0000
+// Bits 7:6: Reserved (00)      - Default state from binary 00000000
+// Bits 5:0: LOUT2VOL (000000) - LOUT2 volume -45dB
+#define ES8388_REG30_DAC_CTRL26_LOUT2VOL (0b00011110)
+
+// Register 0x31 (Decimal 49): DAC Control 27, ROUT2 Volume
+// Default: 0000 0000
+// Bits 7:6: Reserved (00)      - Default state from binary 00000000
+// Bits 5:0: ROUT2VOL (000000) - ROUT2 volume -45dB
+#define ES8388_REG31_DAC_CTRL27_ROUT2VOL (0b00011110)
+
+// Register 0x32 (Decimal 50): DAC Control 28
+// Default: 0000 0000
+// Bits 7:0 - No detailed bit field description on its datasheet page (p.29). Default 00000000.
+#define ES8388_REG32_DAC_CTRL28 (0b00000000)
+
+// Register 0x33 (Decimal 51): DAC Control 29, Headphone LOUT1 Reference
+// Default: 1010 1010
+// Bit 7: hpLout1_ref1 (1) - Reserved
+// Bit 6: hpLout1_ref2 (0) - Reserved
+// Bit 5: Reserved (1)     - Default state from binary 10101010
+// Bit 4: Reserved (0)     - Default state from binary 10101010
+// Bit 3: Reserved (1)     - Default state from binary 10101010
+// Bit 2: Reserved (0)     - Default state from binary 10101010
+// Bit 1: Reserved (1)     - Default state from binary 10101010
+// Bit 0: Reserved (0)     - Default state from binary 10101010
+// Note: Default implies alternating 1s and 0s. All bits described as "Reserved" by datasheet.
+#define ES8388_REG33_DAC_CTRL29_HPLOUT1REF (0b10101010)
+
+// Register 0x34 (Decimal 52): DAC Control 30, Speaker LOUT2 Reference, Mixer Reference
+// Default: 1010 1010
+// Bit 7: spkLout2_ref1 (1) - Reserved
+// Bit 6: spkLout2_ref2 (0) - Reserved
+// Bit 5: Reserved (1)      - Default state from binary 10101010
+// Bit 4: Reserved (0)      - Default state from binary 10101010
+// Bit 3: mixer_ref1 (1)    - Reserved
+// Bit 2: mixer_ref2 (0)    - Reserved
+// Bit 1: MREF1 (1)         - Reserved
+// Bit 0: MREF2 (0)         - Reserved
+// Note: Default implies alternating 1s and 0s. All bits described as "Reserved" by datasheet.
+#define ES8388_REG34_DAC_CTRL30_SPKLOUT2REF (0b10101010)
+
+#endif // ES8388_REGISTER_VALUES_H_

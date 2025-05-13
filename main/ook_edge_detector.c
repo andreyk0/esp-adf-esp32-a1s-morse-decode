@@ -3,7 +3,6 @@
  * @brief Implementation of the OOK edge detector.
  */
 #include "ook_edge_detector.h"
-#include "ook_adaptive_threshold.h"
 #include <assert.h>    // For assert() to catch NULL pointers in update
 #include <esp_check.h> // For ESP_RETURN_ON_FALSE checks
 #include <esp_log.h>   // For ESP logging
@@ -12,44 +11,29 @@
 // Define a logging tag for this module
 static const char *TAG = "OOKE";
 
+// Thresholds with some histeresis
+static const uint32_t LOW_TO_HIGH_THRESHOLD = UINT32_MAX / 2;
+static const uint32_t HIGH_TO_LOW_THRESHOLD = UINT32_MAX / 4;
+
 // --- Function Implementations ---
 
-esp_err_t ook_edge_detector_init(ook_edge_detector_t *edge_state, ook_adaptive_threshold_t *threshold_state,
-                                 int32_t initial_sample) {
+esp_err_t ook_edge_detector_init(ook_edge_detector_t *edge_state) {
 
-  edge_state->threshold_state = threshold_state;
-  edge_state->samples_in_state = 0; // Start counter at 0, update will increment to 1
+  edge_state->samples_in_state = 0;
+  edge_state->below_threshold = true;
 
-  // Determine initial state based on the first sample
-  // Note: Threshold state might not be fully adapted yet, but this sets a starting point.
-  // Update threshold state *before* getting the initial threshold
-  ook_adaptive_threshold_update(edge_state->threshold_state, initial_sample);
-  int32_t initial_threshold = ook_adaptive_threshold_get(edge_state->threshold_state);
-  edge_state->below_threshold = (initial_sample <= initial_threshold); // Use <= for below to match '>' check later
-
-  ESP_LOGD(TAG, "Initialized: Initial sample=%ld, Initial threshold=%ld, Starting state=%s", (long int) initial_sample,
-           (long int) initial_threshold, edge_state->below_threshold ? "Below" : "Above");
-
-  // Initialize counter after determining state
-  edge_state->samples_in_state = 1; // First sample counts as 1 sample in the initial state
-
+  ESP_LOGD(TAG, "Initialized");
   return ESP_OK;
 }
 
-int32_t ook_edge_detector_update(ook_edge_detector_t *edge_state, int32_t sample) {
-  // 1. Update the adaptive threshold first
-  ook_adaptive_threshold_update(edge_state->threshold_state, sample);
-
-  // 2. Get the current threshold
-  int32_t current_threshold_positive_edge = ook_adaptive_threshold_get_positive_edge(edge_state->threshold_state);
-  int32_t current_threshold_negative_edge = ook_adaptive_threshold_get_negative_edge(edge_state->threshold_state);
+int32_t ook_edge_detector_update(ook_edge_detector_t *edge_state, uint32_t sample) {
 
   // 3. Determine the new state based on the current sample
-  bool new_state_is_positive = (sample >= current_threshold_positive_edge);
-  bool new_state_is_negative = (sample <= current_threshold_negative_edge);
+  bool new_sample_is_high = (sample >= LOW_TO_HIGH_THRESHOLD);
+  bool new_sample_is_low = (sample <= HIGH_TO_LOW_THRESHOLD);
 
-  bool is_rising_edge = new_state_is_positive && edge_state->below_threshold;
-  bool is_falling_edge = new_state_is_negative && (!edge_state->below_threshold);
+  bool is_rising_edge = new_sample_is_high && edge_state->below_threshold;
+  bool is_falling_edge = new_sample_is_low && (!edge_state->below_threshold);
 
   // 4. Check if the state has changed (edge detected)
   if (is_rising_edge || is_falling_edge) {
