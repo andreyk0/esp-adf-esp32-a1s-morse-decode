@@ -3,12 +3,11 @@
  * @brief Implementation of the OOK edge detector.
  */
 #include "ook_edge_detector.h"
-#include <assert.h>    // For assert() to catch NULL pointers in update
-#include <esp_check.h> // For ESP_RETURN_ON_FALSE checks
-#include <esp_log.h>   // For ESP logging
-#include <limits.h>    // For INT32_MAX, INT32_MIN, UINT32_MAX
+#include <assert.h>
+#include <esp_check.h>
+#include <esp_log.h>
+#include <limits.h>
 
-// Define a logging tag for this module
 static const char *TAG = "OOKE";
 
 // Thresholds with some histeresis

@@ -3,7 +3,6 @@
 #include "driver/gpio.h"
 
 void leds_init() {
-  // LEDs
   gpio_config_t io_conf = {
       .intr_type = GPIO_INTR_DISABLE,
       .mode = GPIO_MODE_OUTPUT,

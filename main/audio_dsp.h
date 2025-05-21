@@ -5,10 +5,6 @@
 #include "audio_error.h"
 #include "esp_err.h"
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-
 /**
  * @brief   Audio DSP Element configurations
  */
@@ -32,13 +28,13 @@ typedef struct {
 /**
  * @brief Default configuration macro for the audio DSP element.
  */
-#define DEFAULT_AUDIO_DSP_CONFIG()                                        \
-  {                                                                            \
-      .out_rb_size = AUDIO_DSP_RINGBUFFER_SIZE,                           \
-      .task_stack = AUDIO_DSP_TASK_STACK,                                 \
-      .task_core = AUDIO_DSP_TASK_CORE,                                   \
-      .task_prio = AUDIO_DSP_TASK_PRIO,                                   \
-      .extern_stack = false,                                                   \
+#define DEFAULT_AUDIO_DSP_CONFIG()                                                                                     \
+  {                                                                                                                    \
+      .out_rb_size = AUDIO_DSP_RINGBUFFER_SIZE,                                                                        \
+      .task_stack = AUDIO_DSP_TASK_STACK,                                                                              \
+      .task_core = AUDIO_DSP_TASK_CORE,                                                                                \
+      .task_prio = AUDIO_DSP_TASK_PRIO,                                                                                \
+      .extern_stack = false,                                                                                           \
   }
 
 /**
@@ -51,9 +47,5 @@ typedef struct {
  * @return     The audio element handle, or NULL if initialization fails.
  */
 audio_element_handle_t audio_dsp_init(audio_dsp_cfg_t *config);
-
-#ifdef __cplusplus
-}
-#endif
 
 #endif /* _AUDIO_DSP_H_ */

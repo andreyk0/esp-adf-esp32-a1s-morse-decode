@@ -1,12 +1,8 @@
 #ifndef CHAR_BUFFER_H
 #define CHAR_BUFFER_H
 
-#include <stddef.h> // For size_t
 #include <stdbool.h>
-
-#ifdef __cplusplus
-extern "C" {
-#endif
+#include <stddef.h>
 
 /**
  * @brief Opaque character buffer structure.
@@ -20,10 +16,12 @@ typedef struct char_buffer_t char_buffer_t;
  * This function must be called before any other character buffer functions.
  * It sets up the internal structures for the character buffer.
  *
- * @param max_len The maximum number of characters the buffer can hold (excluding the null terminator for the output string).
- * @return A pointer to the initialized character buffer object, or NULL if initialization failed (e.g., invalid max_len or memory allocation failure).
+ * @param max_len The maximum number of characters the buffer can hold (excluding the null terminator for the output
+ * string).
+ * @return A pointer to the initialized character buffer object, or NULL if initialization failed (e.g., invalid max_len
+ * or memory allocation failure).
  */
-char_buffer_t* char_buffer_init(size_t max_len);
+char_buffer_t *char_buffer_init(size_t max_len);
 
 /**
  * @brief Appends a character to the character buffer.
@@ -35,7 +33,7 @@ char_buffer_t* char_buffer_init(size_t max_len);
  * @param ch The character to append.
  * @return true if the character was successfully appended, false if the buffer was full or cb is NULL.
  */
-bool char_buffer_append_char(char_buffer_t* cb, char ch);
+bool char_buffer_append_char(char_buffer_t *cb, char ch);
 
 /**
  * @brief Retrieves the accumulated characters as a null-terminated string.
@@ -53,7 +51,7 @@ bool char_buffer_append_char(char_buffer_t* cb, char ch);
  * from the buffer, or NULL if cb is NULL. If the buffer is empty, it returns an empty string.
  * The returned pointer is to an internal static buffer associated with cb.
  */
-const char* char_buffer_get_string(char_buffer_t* cb);
+const char *char_buffer_get_string(char_buffer_t *cb);
 
 /**
  * @brief Resets the character buffer.
@@ -63,7 +61,7 @@ const char* char_buffer_get_string(char_buffer_t* cb);
  *
  * @param cb Pointer to the character buffer object.
  */
-void char_buffer_reset(char_buffer_t* cb);
+void char_buffer_reset(char_buffer_t *cb);
 
 /**
  * @brief Gets the current number of characters in the buffer.
@@ -71,7 +69,7 @@ void char_buffer_reset(char_buffer_t* cb);
  * @param cb Pointer to the character buffer object.
  * @return The number of characters currently stored in the buffer, or 0 if cb is NULL.
  */
-size_t char_buffer_get_count(const char_buffer_t* cb);
+size_t char_buffer_get_count(const char_buffer_t *cb);
 
 /**
  * @brief Gets the maximum capacity of the buffer.
@@ -79,18 +77,13 @@ size_t char_buffer_get_count(const char_buffer_t* cb);
  * @param cb Pointer to the character buffer object.
  * @return The maximum number of characters the buffer can hold, or 0 if cb is NULL.
  */
-size_t char_buffer_get_capacity(const char_buffer_t* cb);
+size_t char_buffer_get_capacity(const char_buffer_t *cb);
 
 /**
  * @brief Deinitializes the character buffer and frees associated memory.
  *
  * @param cb Pointer to the character buffer object to be deinitialized.
  */
-void char_buffer_deinit(char_buffer_t* cb);
-
-
-#ifdef __cplusplus
-}
-#endif
+void char_buffer_deinit(char_buffer_t *cb);
 
 #endif // CHAR_BUFFER_H

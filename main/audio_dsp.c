@@ -31,6 +31,9 @@ typedef struct audio_dsp {
   ook_edge_detector_t ook_edge;
 } audio_dsp_t;
 
+// Decay coefficient applied to current min/max on each callback
+static float DECAY = 0.010;
+
 static float smax = -MAXFLOAT / 2;
 static float smin = MAXFLOAT / 2;
 
@@ -109,8 +112,8 @@ static int _dsp_process(audio_element_handle_t self, char *in_buffer, int in_len
                                   mod->wfe)); // memcpy(output, input, num_samples_filter * sizeof(float));
 
   // Shrinking min/max to account for signal fade in/out
-  smax = smax - 0.010 * fabs(smax);
-  smin = smin + 0.010 * fabs(smin);
+  smax = smax - DECAY * fabs(smax);
+  smin = smin + DECAY * fabs(smin);
 
   for (int i = 0; i < num_samples_filter; i++) {
     if (smin > output[i]) {
@@ -132,7 +135,23 @@ static int _dsp_process(audio_element_handle_t self, char *in_buffer, int in_len
 
   // Convert back to stereo output and run OOK decoder
   for (int i = 0; i < num_samples_filter; i++) {
-    uint32_t s = (uint32_t)fmin((float)(UINT32_MAX - UINT32_MAX / 128), fmax(0, (output[i] - smin) / scale));
+    float val_float = (output[i] - smin) / scale;
+    uint32_t s;
+
+    if (val_float <= 0.0f) {
+      s = 0;
+    } else if (val_float >= (float)UINT32_MAX) {
+      // (float)UINT32_MAX is typically 4294967296.0f (i.e., 2^32f) due to rounding.
+      // If val_float is this large or larger, it should be clamped to UINT32_MAX.
+      s = UINT32_MAX;
+    } else {
+      // val_float is in the range (0.0f, 2^32f).
+      // Casting this to uint32_t is safe and will result in a value
+      // from 0 to UINT32_MAX. For example, if val_float is 4294967295.999...
+      // (and still less than 2^32f), its (uint32_t) cast will be 4294967295.
+      s = (uint32_t)val_float;
+    }
+
     samples[i * 2] = (s >> 16) + INT16_MIN;
 
     int32_t e = ook_edge_detector_update(&mod->ook_edge, s);

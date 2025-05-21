@@ -55,7 +55,7 @@ void decaying_histogram_dump(const decaying_histogram_t *hist) {
   ESP_LOGI(TAG, "min=%d\tmax=%d", (int)minv, (int)maxv);
 }
 
-inline void decaying_histogram_decay(decaying_histogram_t *hist) {
+void decaying_histogram_decay(decaying_histogram_t *hist) {
   if (hist == NULL || hist->bins == NULL) {
     return;
   }
