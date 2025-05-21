@@ -1,0 +1,224 @@
+From edb182c71f7c7f5364b704a9cdcc48b69da4acda Mon Sep 17 00:00:00 2001
+From: Andrey Kartashov <andrey.kartashov@gmail.com>
+Date: Sat, 19 Apr 2025 13:12:49 -0400
+Subject: [PATCH 1/2] Update buttons board config
+
+See examples/checks/check_board_buttons/
+---
+ .envrc                                        |  1 +
+ components/audio_board/lyrat_v4_3/board.c     | 15 ++++++------
+ components/audio_board/lyrat_v4_3/board_def.h | 24 +++++++++----------
+ .../lyrat_v4_3/board_pins_config.c            |  8 +++----
+ export.sh                                     |  3 +--
+ 5 files changed, 23 insertions(+), 28 deletions(-)
+ create mode 100644 .envrc
+
+diff --git a/.envrc b/.envrc
+new file mode 100644
+index 00000000..3ce6f48e
+--- /dev/null
++++ b/.envrc
+@@ -0,0 +1 @@
++. $HOME/work/esp/esp-adf/export.sh
+diff --git a/components/audio_board/lyrat_v4_3/board.c b/components/audio_board/lyrat_v4_3/board.c
+index 92d7d6c1..7d9201ca 100644
+--- a/components/audio_board/lyrat_v4_3/board.c
++++ b/components/audio_board/lyrat_v4_3/board.c
+@@ -81,7 +81,13 @@ display_service_handle_t audio_board_led_init(void)
+ esp_err_t audio_board_key_init(esp_periph_set_handle_t set)
+ {
+     periph_button_cfg_t btn_cfg = {
+-        .gpio_mask = (1ULL << get_input_rec_id()) | (1ULL << get_input_mode_id()), //REC BTN & MODE BTN
++    .gpio_mask = ((1ULL << get_input_rec_id()) |
++                  (1ULL << get_input_mode_id()) |
++                  (1ULL << get_input_set_id()) |
++                  (1ULL << get_input_play_id()) |
++                  (1ULL << get_input_volup_id()) |
++                  (1ULL << get_input_voldown_id())
++                 ),
+     };
+     esp_periph_handle_t button_handle = periph_button_init(&btn_cfg);
+     AUDIO_NULL_CHECK(TAG, button_handle, return ESP_ERR_ADF_MEMORY_LACK);
+@@ -90,13 +96,6 @@ esp_err_t audio_board_key_init(esp_periph_set_handle_t set)
+     if (ret != ESP_OK) {
+         return ret;
+     }
+-    periph_touch_cfg_t touch_cfg = {
+-        .touch_mask = TOUCH_PAD_SEL4 | TOUCH_PAD_SEL7 | TOUCH_PAD_SEL8 | TOUCH_PAD_SEL9,
+-        .tap_threshold_percent = 70,
+-    };
+-    esp_periph_handle_t touch_periph = periph_touch_init(&touch_cfg);
+-    AUDIO_NULL_CHECK(TAG, touch_periph, return ESP_ERR_ADF_MEMORY_LACK);
+-    ret = esp_periph_start(set, touch_periph);
+     return ret;
+ }
+ 
+diff --git a/components/audio_board/lyrat_v4_3/board_def.h b/components/audio_board/lyrat_v4_3/board_def.h
+index 8bfa7c57..96d848ee 100644
+--- a/components/audio_board/lyrat_v4_3/board_def.h
++++ b/components/audio_board/lyrat_v4_3/board_def.h
+@@ -25,8 +25,6 @@
+ #ifndef _AUDIO_BOARD_DEFINITION_H_
+ #define _AUDIO_BOARD_DEFINITION_H_
+ 
+-#include "driver/touch_pad.h"
+-
+ /**
+  * @brief SDCARD Function Definition
+  */
+@@ -39,7 +37,7 @@
+ #define ESP_SD_PIN_D0             GPIO_NUM_2
+ #define ESP_SD_PIN_D1             GPIO_NUM_4
+ #define ESP_SD_PIN_D2             GPIO_NUM_12
+-#define ESP_SD_PIN_D3             GPIO_NUM_13
++#define ESP_SD_PIN_D3             GPIO_NUM_13 // note position of dip switch
+ 
+ 
+ /**
+@@ -54,7 +52,7 @@
+  */
+ #define FUNC_AUDIO_CODEC_EN       (1)
+ #define AUXIN_DETECT_GPIO         GPIO_NUM_12
+-#define HEADPHONE_DETECT          GPIO_NUM_19
++#define HEADPHONE_DETECT          GPIO_NUM_39
+ #define PA_ENABLE_GPIO            GPIO_NUM_21
+ #define CODEC_ADC_I2S_PORT        ((i2s_port_t)0)
+ #define CODEC_ADC_BITS_PER_SAMPLE ((i2s_data_bit_width_t)16) /* 16bit */
+@@ -87,11 +85,11 @@ extern audio_hal_func_t AUDIO_CODEC_ES8388_DEFAULT_HANDLE;
+ #define FUNC_BUTTON_EN            (1)
+ #define INPUT_KEY_NUM             6
+ #define BUTTON_REC_ID             GPIO_NUM_36
+-#define BUTTON_MODE_ID            GPIO_NUM_39
+-#define BUTTON_SET_ID             TOUCH_PAD_NUM9
+-#define BUTTON_PLAY_ID            TOUCH_PAD_NUM8
+-#define BUTTON_VOLUP_ID           TOUCH_PAD_NUM7
+-#define BUTTON_VOLDOWN_ID         TOUCH_PAD_NUM4
++#define BUTTON_MODE_ID            GPIO_NUM_13 // note position of the dip switch
++#define BUTTON_SET_ID             GPIO_NUM_19
++#define BUTTON_PLAY_ID            GPIO_NUM_23
++#define BUTTON_VOLUP_ID           GPIO_NUM_18
++#define BUTTON_VOLDOWN_ID         GPIO_NUM_5
+ 
+ #define INPUT_KEY_DEFAULT_INFO() {                      \
+      {                                                  \
+@@ -105,22 +103,22 @@ extern audio_hal_func_t AUDIO_CODEC_ES8388_DEFAULT_HANDLE;
+         .act_id = BUTTON_MODE_ID,                       \
+     },                                                  \
+     {                                                   \
+-        .type = PERIPH_ID_TOUCH,                        \
++        .type = PERIPH_ID_BUTTON,                       \
+         .user_id = INPUT_KEY_USER_ID_SET,               \
+         .act_id = BUTTON_SET_ID,                        \
+     },                                                  \
+     {                                                   \
+-        .type = PERIPH_ID_TOUCH,                        \
++        .type = PERIPH_ID_BUTTON,                       \
+         .user_id = INPUT_KEY_USER_ID_PLAY,              \
+         .act_id = BUTTON_PLAY_ID,                       \
+     },                                                  \
+     {                                                   \
+-        .type = PERIPH_ID_TOUCH,                        \
++        .type = PERIPH_ID_BUTTON,                       \
+         .user_id = INPUT_KEY_USER_ID_VOLUP,             \
+         .act_id = BUTTON_VOLUP_ID,                      \
+     },                                                  \
+     {                                                   \
+-        .type = PERIPH_ID_TOUCH,                        \
++        .type = PERIPH_ID_BUTTON,                       \
+         .user_id = INPUT_KEY_USER_ID_VOLDOWN,           \
+         .act_id = BUTTON_VOLDOWN_ID,                    \
+     }                                                   \
+diff --git a/components/audio_board/lyrat_v4_3/board_pins_config.c b/components/audio_board/lyrat_v4_3/board_pins_config.c
+index 558d2739..1816f7b9 100644
+--- a/components/audio_board/lyrat_v4_3/board_pins_config.c
++++ b/components/audio_board/lyrat_v4_3/board_pins_config.c
+@@ -37,8 +37,8 @@ esp_err_t get_i2c_pins(i2c_port_t port, i2c_config_t *i2c_config)
+ {
+     AUDIO_NULL_CHECK(TAG, i2c_config, return ESP_FAIL);
+     if (port == I2C_NUM_0 || port == I2C_NUM_1) {
+-        i2c_config->sda_io_num = GPIO_NUM_18;
+-        i2c_config->scl_io_num = GPIO_NUM_23;
++        i2c_config->sda_io_num = GPIO_NUM_33;
++        i2c_config->scl_io_num = GPIO_NUM_32;
+     } else {
+         i2c_config->sda_io_num = -1;
+         i2c_config->scl_io_num = -1;
+@@ -53,7 +53,7 @@ esp_err_t get_i2s_pins(int port, board_i2s_pin_t *i2s_config)
+     AUDIO_NULL_CHECK(TAG, i2s_config, return ESP_FAIL);
+     if (port == 0 || port == 1) {
+         i2s_config->mck_io_num = GPIO_NUM_0;
+-        i2s_config->bck_io_num = GPIO_NUM_5;
++        i2s_config->bck_io_num = GPIO_NUM_27;
+         i2s_config->ws_io_num = GPIO_NUM_25;
+         i2s_config->data_out_num = GPIO_NUM_26;
+         i2s_config->data_in_num = GPIO_NUM_35;
+@@ -123,8 +123,6 @@ int8_t get_input_mode_id(void)
+     return BUTTON_MODE_ID;
+ }
+ 
+-// touch pins
+-
+ int8_t get_input_set_id(void)
+ {
+     return BUTTON_SET_ID;
+diff --git a/export.sh b/export.sh
+index d08e9e8d..8bddb935 100755
+--- a/export.sh
++++ b/export.sh
+@@ -1,8 +1,7 @@
+ #!/bin/bash
+ 
+ if [ -z "$ADF_PATH" ]; then
+-    basedir=$(dirname "$0")
+-    export ADF_PATH=$(cd "${basedir}"; pwd)
++    export ADF_PATH=$HOME/work/esp/esp-adf
+ fi
+ if [ -z "$IDF_PATH" ]; then
+     export IDF_PATH=$ADF_PATH/esp-idf
+-- 
+2.49.0
+
+
+From 58cfd31eb027acc7abd7419b717d2d5bf4f8adca Mon Sep 17 00:00:00 2001
+From: Andrey Kartashov <andrey.kartashov@gmail.com>
+Date: Sat, 19 Apr 2025 19:13:00 -0400
+Subject: [PATCH 2/2] Configure gain as per
+
+https://github.com/Ai-Thinker-Open/ESP32-A1S-AudioKit/issues/26#issuecomment-1219363637
+---
+ components/audio_hal/driver/es8388/es8388.c | 16 ++++++++++------
+ 1 file changed, 10 insertions(+), 6 deletions(-)
+
+diff --git a/components/audio_hal/driver/es8388/es8388.c b/components/audio_hal/driver/es8388/es8388.c
+index 144e7281..211a19e8 100755
+--- a/components/audio_hal/driver/es8388/es8388.c
++++ b/components/audio_hal/driver/es8388/es8388.c
+@@ -386,15 +386,19 @@ esp_err_t es8388_config_fmt(es_module_t mode, es_i2s_fmt_t fmt)
+ esp_err_t es8388_set_voice_volume(int volume)
+ {
+     esp_err_t res = ESP_OK;
+-    uint8_t reg = 0;
+-    reg = audio_codec_get_dac_reg_value(dac_vol_handle, volume);
+-    res |= es_write_reg(ES8388_ADDR, ES8388_DACCONTROL5, reg);
+-    res |= es_write_reg(ES8388_ADDR, ES8388_DACCONTROL4, reg);
+-    ESP_LOGD(ES_TAG, "Set volume:%.2d reg_value:0x%.2x dB:%.1f", (int)dac_vol_handle->user_volume, reg,
+-            audio_codec_cal_dac_volume(dac_vol_handle));
++    if (volume < 0) volume = 0; else if (volume > 100) volume = 100;
++    volume /= 3;
++    res = es_write_reg(ES8388_ADDR, ES8388_DACCONTROL4, 0); // LDACVOL  0..-96db  in 0.5steps (0=loud, 192=silent)
++    res |= es_write_reg(ES8388_ADDR, ES8388_DACCONTROL5, 0); // RDACVOL 0..-96db  in 0.5steps (0=loud, 192=silent)
++    res |= es_write_reg(ES8388_ADDR, ES8388_DACCONTROL24, volume);  // LOUT1 volume 0..33 dB
++    res |= es_write_reg(ES8388_ADDR, ES8388_DACCONTROL25, volume);  // ROUT1 volume 0..33 dB
++    res |= es_write_reg(ES8388_ADDR, ES8388_DACCONTROL26, volume);  // LOUT2 volume 0..33 dB
++    res |= es_write_reg(ES8388_ADDR, ES8388_DACCONTROL27, volume);  // ROUT2 volume 0..33 dB
+     return res;
+ }
+ 
++
++
+ esp_err_t es8388_get_voice_volume(int *volume)
+ {
+     esp_err_t res = ESP_OK;
+-- 
+2.49.0
+
