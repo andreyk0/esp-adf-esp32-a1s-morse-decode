@@ -79,11 +79,11 @@ static void handle_on_to_off_transition(int32_t abse) {
   dit_th = decaying_histogram_get_threshold(&dit_dah_len_his);
 
   if (abse >= dit_th) {
-    ESP_LOGI(TAG, "- %0.3f / %0.3f", TSECS(abse), TSECS(dit_th));
+    ESP_LOGD(TAG, "- %0.3f / %0.3f", TSECS(abse), TSECS(dit_th));
     decode_morse_signal('-');
     char_buffer_append_char(dit_dah_buf, '-');
   } else {
-    ESP_LOGI(TAG, ". %0.3f / %0.3f", TSECS(abse), TSECS(dit_th));
+    ESP_LOGD(TAG, ". %0.3f / %0.3f", TSECS(abse), TSECS(dit_th));
     decode_morse_signal('.');
     char_buffer_append_char(dit_dah_buf, '.');
   }
@@ -98,11 +98,11 @@ static void handle_pause() {
       char_buffer_append_char(text_buf, c);
     }
     char_buffer_append_char(dit_dah_buf, ' ');
-    ESP_LOGI(TAG, "%c", c);
+    ESP_LOGD(TAG, "%c", c);
   } else {
-
-    decaying_histogram_dump(&dit_dah_len_his);
-    ESP_LOGI(TAG, "? %0.3f", TSECS(dit_th));
+    // decaying_histogram_dump(&dit_dah_len_his);
+    ESP_LOGD(TAG, "? %0.3f", TSECS(dit_th));
+    char_buffer_append_char(text_buf, '?');
   }
 }
 
@@ -112,14 +112,14 @@ static void handle_off_to_on_transition(int32_t abse) {
 
     if (abse > 3 * dit_th) {
       log_buffers();
-      ESP_LOGI(TAG, "~~~ %0.3f", TSECS(abse));
+      ESP_LOGD(TAG, "~~~ %0.3f", TSECS(abse));
       gpio_set_level(LED_PIN_1, 0);
     } else {
-      ESP_LOGI(TAG, "~~ %0.3f", TSECS(abse));
+      ESP_LOGD(TAG, "~~ %0.3f", TSECS(abse));
       gpio_set_level(LED_PIN_1, 0);
     }
   } else {
-    ESP_LOGI(TAG, "~ %0.3f", TSECS(abse));
+    ESP_LOGD(TAG, "~ %0.3f", TSECS(abse));
     gpio_set_level(LED_PIN_1, 1);
   }
 }
