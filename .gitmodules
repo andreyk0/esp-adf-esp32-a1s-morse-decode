@@ -1,0 +1,8 @@
+[submodule "components/u8g2-hal-esp-idf"]
+	path = components/u8g2-hal-esp-idf
+	url = https://github.com/hide4096/u8g2-hal-esp-idf.git
+	# original driver, hasn't been updated in a while
+	#url = https://github.com/mkfrey/u8g2-hal-esp-idf.git
+[submodule "components/u8g2"]
+	path = components/u8g2
+	url = https://github.com/olikraus/u8g2.git

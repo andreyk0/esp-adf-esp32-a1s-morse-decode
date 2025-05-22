@@ -4,24 +4,25 @@
 #include "esp_log.h"
 #include "freertos/task.h"
 #include "i2s_stream.h"
-#include <es8388.h>
 
 #include "configure_es8388.h"
+#include "lcd.h"
 #include "leds.h"
 #include "morse.h"
 
 static const char *TAG = "MAIN";
 
 void app_main(void) {
-  ESP_ERROR_CHECK(morse_init());
+  // esp_log_level_set("*", ESP_LOG_INFO);
+  // esp_log_level_set(TAG, ESP_LOG_DEBUG);
 
   leds_init();
+  lcd_init();
+
+  ESP_ERROR_CHECK(morse_init());
 
   audio_pipeline_handle_t pipeline;
   audio_element_handle_t i2s_stream_writer, i2s_stream_reader, audio_dsp_el;
-
-  // esp_log_level_set("*", ESP_LOG_INFO);
-  // esp_log_level_set(TAG, ESP_LOG_DEBUG);
 
   ESP_LOGI(TAG, "Start codec chip");
   configure_es8388();
