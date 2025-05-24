@@ -54,7 +54,10 @@ void lcd_init() {
 
   u8g2_SetFont(&u8g2, FONT);
 
-  lcd_print_str("Hello!");
+  while (true) {
+    lcd_print_str("Hello! ");
+    vTaskDelay(pdMS_TO_TICKS(1000));
+  }
 
   ESP_LOGI(TAG, "Initialized PCD8544");
 }
@@ -79,7 +82,7 @@ void lcd_flush() {
 }
 
 void lcd_print_str(char *cp) {
-  while (cp) {
+  while (*cp) {
     lcd_print(*cp);
     cp++;
   }
