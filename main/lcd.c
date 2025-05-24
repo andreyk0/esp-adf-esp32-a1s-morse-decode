@@ -76,7 +76,7 @@ void lcd_flush() {
   u8g2_SendBuffer(&u8g2);
 }
 
-void print(char ch) {
+void lcd_print(char ch) {
   if (current_column >= TEXT_COLUMNS) {
     current_column = 0;
     current_line++;
@@ -89,4 +89,10 @@ void print(char ch) {
   text_buf[current_line][current_column] = ch;
   text_buf[current_line][current_column + 1] = 0;
   current_column++;
+}
+
+
+void lcd_print_flush(char ch) {
+  lcd_print(ch);
+  lcd_flush();
 }
