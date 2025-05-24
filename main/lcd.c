@@ -5,6 +5,7 @@
 #include "u8g2_esp32_hal.h"
 #include <stdbool.h>
 #include <stdint.h>
+#include <string.h>
 
 #include "lcd.h"
 
@@ -24,10 +25,13 @@ static const char *TAG = "LCD";
 #define CHAR_HEIGHT (7)
 #define TEXT_LINES (7)
 // right line of pixels is clear, 17 columns, 17*5-1=84
-#define CHAR_WIDTH (5)
+// #define CHAR_WIDTH (5)
 #define TEXT_COLUMNS (17)
+#define TEXT_BUF_LEN (TEXT_LINES * TEXT_COLUMNS)
 
 static u8g2_t u8g2;
+static char text_buf[TEXT_BUF_LEN + 1] = {0};
+static char *text_pos = text_buf;
 
 void lcd_init() {
   ESP_LOGI(TAG, "Starting U8g2 PCD8544...");
@@ -50,21 +54,32 @@ void lcd_init() {
 
   u8g2_SetFont(&u8g2, FONT);
 
-  const char *TEST = "1234567890ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+  ESP_LOGI(TAG, "Initialized PCD8544");
+}
 
-  while (1) {
-    int y;
+void lcd_flush() {
+  int y;
 
-    u8g2_ClearBuffer(&u8g2);
-    for (int l = 0; l <= TEXT_LINES; l++) {
-      y = (CHAR_HEIGHT - 1) + (CHAR_HEIGHT)*l;
-      u8g2_DrawStr(&u8g2, 0, y, TEST + l);
-    }
-    u8g2_SendBuffer(&u8g2);
+  u8g2_ClearBuffer(&u8g2);
+  for (int l = 0; l < TEXT_LINES; l++) {
+    y = (CHAR_HEIGHT - 1) + (CHAR_HEIGHT)*l;
+    u8g2_DrawStr(&u8g2, 0, y, text_buf + (l * TEXT_COLUMNS));
+  }
+  u8g2_SendBuffer(&u8g2);
+}
 
-    // You can update the display here
-    vTaskDelay(pdMS_TO_TICKS(1000));
+static void scroll_up() {
+  memcpy(text_buf, text_buf + TEXT_COLUMNS, TEXT_BUF_LEN - TEXT_COLUMNS);
+  text_pos = text_buf + TEXT_BUF_LEN - TEXT_COLUMNS;
+  *text_pos = 0;
+}
+
+void print(char ch) {
+  if (text_pos >= text_buf + TEXT_BUF_LEN) {
+    scroll_up();
   }
 
-  ESP_LOGI(TAG, "Finished PCD8544 init");
+  *text_pos = ch;
+  text_pos++;
+  *text_pos = 0;
 }
