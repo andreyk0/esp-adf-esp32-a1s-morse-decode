@@ -54,6 +54,8 @@ void lcd_init() {
 
   u8g2_SetFont(&u8g2, FONT);
 
+  lcd_print_str("Hello!");
+
   ESP_LOGI(TAG, "Initialized PCD8544");
 }
 
@@ -76,6 +78,13 @@ void lcd_flush() {
   u8g2_SendBuffer(&u8g2);
 }
 
+void lcd_print_str(char *cp) {
+  while (cp) {
+    lcd_print(*cp);
+    cp++;
+  }
+}
+
 void lcd_print(char ch) {
   if (current_column >= TEXT_COLUMNS) {
     current_column = 0;
@@ -87,12 +96,11 @@ void lcd_print(char ch) {
   }
 
   text_buf[current_line][current_column] = ch;
-  text_buf[current_line][current_column + 1] = 0;
   current_column++;
+  text_buf[current_line][current_column] = 0;
 }
 
-
 void lcd_print_flush(char ch) {
-  lcd_print(ch);
-  lcd_flush();
+  // lcd_print(ch);
+  // lcd_flush();
 }
