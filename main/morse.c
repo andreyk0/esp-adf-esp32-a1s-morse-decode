@@ -17,6 +17,7 @@
 
 #include "char_buffer.h"
 #include "decaying_histogram.h"
+#include "lcd.h"
 #include "leds.h"
 #include "morse_decoder.h"
 
@@ -93,6 +94,7 @@ static void handle_pause() {
   char c = decode_morse_signal(' ');
 
   if (c) {
+    lcd_print_flush(c);
     if (!char_buffer_append_char(text_buf, c)) {
       log_buffers();
       char_buffer_append_char(text_buf, c);
@@ -102,7 +104,8 @@ static void handle_pause() {
   } else {
     // decaying_histogram_dump(&dit_dah_len_his);
     ESP_LOGD(TAG, "? %0.3f", TSECS(dit_th));
-    char_buffer_append_char(text_buf, '?');
+    char_buffer_append_char(text_buf, '~');
+    lcd_print_flush('~');
   }
 }
 
@@ -112,6 +115,7 @@ static void handle_off_to_on_transition(int32_t abse) {
 
     if (abse > 3 * dit_th) {
       log_buffers();
+      lcd_print_flush(' ');
       ESP_LOGD(TAG, "~~~ %0.3f", TSECS(abse));
       gpio_set_level(LED_PIN_1, 0);
     } else {
