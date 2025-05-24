@@ -11,7 +11,6 @@
 
 static const char *TAG = "LCD";
 
-// Define your GPIO pins for the Nokia 5110
 #define PIN_CLK GPIO_NUM_18
 #define PIN_MOSI GPIO_NUM_23
 #define PIN_CS GPIO_NUM_5
@@ -27,11 +26,12 @@ static const char *TAG = "LCD";
 // right line of pixels is clear, 17 columns, 17*5-1=84
 // #define CHAR_WIDTH (5)
 #define TEXT_COLUMNS (17)
-#define TEXT_BUF_LEN (TEXT_LINES * TEXT_COLUMNS)
 
 static u8g2_t u8g2;
-static char text_buf[TEXT_BUF_LEN + 1] = {0};
-static char *text_pos = text_buf;
+// text_buf stores TEXT_BUF_LEN characters, 0-terminated lines
+static char text_buf[TEXT_LINES][TEXT_COLUMNS + 1] = {0};
+static int current_line = 0;
+static int current_column = 0;
 
 void lcd_init() {
   ESP_LOGI(TAG, "Starting U8g2 PCD8544...");
@@ -58,28 +58,34 @@ void lcd_init() {
 }
 
 void lcd_flush() {
-  int y;
-
   u8g2_ClearBuffer(&u8g2);
-  for (int l = 0; l < TEXT_LINES; l++) {
+
+  // current line is always at the bottom
+  int y;
+  int buf_line = current_line;
+
+  for (int l = TEXT_LINES - 1; l >= 0; l--) {
     y = (CHAR_HEIGHT - 1) + (CHAR_HEIGHT)*l;
-    u8g2_DrawStr(&u8g2, 0, y, text_buf + (l * TEXT_COLUMNS));
+    u8g2_DrawStr(&u8g2, 0, y, text_buf[buf_line]);
+    buf_line--;
+    if (buf_line < 0) {
+      buf_line = TEXT_LINES - 1;
+    }
   }
+
   u8g2_SendBuffer(&u8g2);
 }
 
-static void scroll_up() {
-  memcpy(text_buf, text_buf + TEXT_COLUMNS, TEXT_BUF_LEN - TEXT_COLUMNS);
-  text_pos = text_buf + TEXT_BUF_LEN - TEXT_COLUMNS;
-  *text_pos = 0;
-}
-
 void print(char ch) {
-  if (text_pos >= text_buf + TEXT_BUF_LEN) {
-    scroll_up();
+  if (current_column >= TEXT_COLUMNS) {
+    current_column = 0;
+    current_line++;
   }
 
-  *text_pos = ch;
-  text_pos++;
-  *text_pos = 0;
+  if (current_line >= TEXT_LINES) {
+    current_line = 0;
+  }
+
+  text_buf[current_line][current_column] = ch;
+  text_buf[current_line][current_column + 1] = 0;
 }
