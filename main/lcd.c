@@ -56,6 +56,7 @@ void lcd_init() {
 
   while (true) {
     lcd_print_str("Hello! ");
+    lcd_flush();
     vTaskDelay(pdMS_TO_TICKS(1000));
   }
 
