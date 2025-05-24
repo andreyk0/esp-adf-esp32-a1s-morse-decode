@@ -88,4 +88,5 @@ void print(char ch) {
 
   text_buf[current_line][current_column] = ch;
   text_buf[current_line][current_column + 1] = 0;
+  current_column++;
 }
