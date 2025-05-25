@@ -8,3 +8,5 @@ DSP: BPF(750Hz) -> Envelope detector -> LPF -> Rescaling -> Audio out / OOK edge
 
 `esp-adf-a686ff2ba4d9658c77845be0de2b423d9ee22324.patch` captures some of the changes to ESP ADF lyrat_v4_3 board, for reference,
 in the end all of the registers are configured directly.
+
+Display: PCD8544, attached to JTAG header, see [lcd.c](main/lcd.c). Dip switches 4,5 are ON.
